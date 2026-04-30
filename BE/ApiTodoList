@@ -1,0 +1,62 @@
+📦 Module 1: Xác thực & Phân quyền (Authentication)
+[ ] POST /api/auth/login : Đăng nhập
+
+
+
+📦 Module 2: Quản lý Nhân sự (Users)
+Middleware yêu cầu: Chỉ Manager mới có quyền truy cập.
+
+[ ] GET /api/users : Lấy danh sách toàn bộ nhân viên. (admin)
+
+[ ] POST /api/users : Tạo tài khoản nhân viên mới (Phục vụ, Bếp).(admin)
+
+[ ] PUT /api/users/:id : Cập nhật thông tin nhân viên (đổi tên, đổi role).(admin)
+
+[ ] DELETE /api/users/:id : Xóa hoặc vô hiệu hóa tài khoản nhân viên.(admin)
+
+📦 Module 3: Quản lý Bàn ăn (Dining Tables)
+[ ] GET /api/tables : Lấy danh sách tất cả các bàn và trạng thái hiện tại (Available/Occupied).(waitstaff)
+
+[ ] POST /api/tables : Thêm bàn mới (Chỉ Manager).
+
+[ ] PUT /api/tables/:id/status : Cập nhật trạng thái bàn (khi khách ngồi vào hoặc rời đi).(waitstaff)
+
+📦 Module 4: Quản lý Danh mục & Thực đơn (Categories & Menu Items)
+[ ] GET /api/categories : Lấy danh sách danh mục món ăn (Public cho staff).........
+
+[ ] POST /api/categories : Thêm danh mục mới (Chỉ Manager).
+
+[ ] GET /api/menu : Lấy danh sách món ăn (có hỗ trợ filter theo category_id và is_available).
+
+[ ] POST /api/menu : Thêm món ăn mới (Chỉ Manager)......
+
+[ ] PUT /api/menu/:id : Cập nhật thông tin món ăn (giá, tên, trạng thái còn/hết).
+
+[ ] DELETE /api/menu/:id : Xóa món ăn.........
+
+📦 Module 5: Quản lý Đơn hàng (Orders & OrderDetails).......
+Đây là Module cốt lõi, cần viết logic tính toán thật kỹ.
+
+[ ] POST /api/orders : Tạo đơn hàng mới. Mở bàn, insert vào Orders và insert danh sách món vào OrderDetails (kèm price_at_time).
+
+[ ] GET /api/orders/:id : Xem chi tiết một đơn hàng (bao gồm danh sách món bên trong).
+
+[ ] GET /api/orders/active : Lấy danh sách các đơn hàng đang hoạt động (Pending, Preparing, Ready). Dành cho màn hình Bếp và Phục vụ.
+
+[ ] POST /api/orders/:id/items : Gọi thêm món vào một đơn hàng đã tồn tại.
+
+[ ] PUT /api/orders/items/:detail_id/status : (Dành cho Bếp) Cập nhật trạng thái từng món (Pending -> Preparing -> Ready -> Served).
+
+[ ] PUT /api/orders/:id/status : Cập nhật trạng thái tổng thể của đơn hàng (VD: Khi tất cả món đã Served).
+
+📦 Module 6: Thanh toán & Hóa đơn (Payments)
+[ ] GET /api/orders/:id/bill : Tính toán và trả về tổng tiền hóa đơn (Subtotal, Tax, Discount, TotalAmount) để phục vụ in bill tạm tính cho khách xem.
+
+[ ] POST /api/payments : Xử lý thanh toán. Chuyển trạng thái Order thành 'Paid', giải phóng bàn (chuyển Table thành 'Available') và lưu record vào bảng Payments.
+
+📦 Module 7: Báo cáo Doanh thu (Reports)
+Middleware yêu cầu: Chỉ Manager mới có quyền truy cập.
+
+[ ] GET /api/reports/daily : Lấy báo cáo doanh thu trong ngày hiện tại.
+
+[ ] GET /api/reports/revenue : Lấy báo cáo doanh thu theo khoảng thời gian (có params start_date, end_date).
