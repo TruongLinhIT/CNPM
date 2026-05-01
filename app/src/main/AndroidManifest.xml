@@ -2,7 +2,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- Cấp quyền truy cập Internet -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
@@ -15,17 +14,26 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.FE"
-        android:usesCleartextTraffic="true"> <!-- Cho phép kết nối http (không bảo mật) khi dev -->
-
-        <activity
-            android:name=".KitchenActivity"
-            android:exported="false" />
+        android:usesCleartextTraffic="true"> <activity
+        android:name=".KitchenActivity"
+        android:exported="false" />
         <activity
             android:name=".WaitstaffActivity"
             android:exported="false" />
         <activity
             android:name=".ManagerActivity"
             android:exported="false" />
+
+        <activity
+            android:name=".QuanLyNhanVienActivity"
+            android:exported="false" />
+        <activity
+            android:name=".QuanLyMonAnActivity"
+            android:exported="false" />
+        <activity
+            android:name=".DoanhThuActivity"
+            android:exported="false" />
+
         <activity
             android:name=".login.LoginActivity"
             android:exported="true">

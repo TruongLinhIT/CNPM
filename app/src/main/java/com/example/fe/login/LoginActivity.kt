@@ -77,7 +77,7 @@ class LoginActivity : AppCompatActivity() {
 
     private fun navigateByRole(role: String?) {
         val intent = when (role?.lowercase()) {
-            "manager" -> Intent(this, ManagerActivity::class.java)
+            "admin", "manager" -> Intent(this, ManagerActivity::class.java)
             "waitstaff" -> Intent(this, WaitstaffActivity::class.java)
             "kitchen" -> Intent(this, KitchenActivity::class.java)
             else -> {
