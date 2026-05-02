@@ -20,6 +20,20 @@
         android:layout_marginTop="32dp"/>
 
     <Button
+        android:id="@+id/btnQuanLyBanAn"
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:text="Quản Lý Bàn Ăn"
+        android:layout_marginBottom="16dp"/>
+
+    <Button
+        android:id="@+id/btnQuanLyDanhMuc"
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:text="Quản Lý Danh Mục"
+        android:layout_marginBottom="16dp"/>
+
+    <Button
         android:id="@+id/btnQuanLyMonAn"
         android:layout_width="match_parent"
         android:layout_height="60dp"

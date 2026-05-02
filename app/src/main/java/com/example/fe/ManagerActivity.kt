@@ -21,10 +21,22 @@ class ManagerActivity : AppCompatActivity() {
             insets
         }
 
+        val btnQuanLyBanAn = findViewById<Button>(R.id.btnQuanLyBanAn)
+        val btnQuanLyDanhMuc = findViewById<Button>(R.id.btnQuanLyDanhMuc)
         val btnQuanLyMonAn = findViewById<Button>(R.id.btnQuanLyMonAn)
         val btnQuanLyNhanVien = findViewById<Button>(R.id.btnQuanLyNhanVien)
         val btnQuanLyDoanhThu = findViewById<Button>(R.id.btnQuanLyDoanhThu)
         val btnLogout = findViewById<Button>(R.id.btnLogout)
+
+        btnQuanLyBanAn.setOnClickListener {
+            val intent = Intent(this, TableActivity::class.java)
+            intent.putExtra("USER_ROLE", "manager")
+            startActivity(intent)
+        }
+
+        btnQuanLyDanhMuc.setOnClickListener {
+            startActivity(Intent(this, QuanLyDanhMucActivity::class.java))
+        }
 
         btnQuanLyMonAn.setOnClickListener {
             startActivity(Intent(this, QuanLyMonAnActivity::class.java))

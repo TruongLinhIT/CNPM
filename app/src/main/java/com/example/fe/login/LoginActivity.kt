@@ -41,7 +41,6 @@ class LoginActivity : AppCompatActivity() {
             performLogin(username, password)
         }
 
-        // Chuyển sang màn hình Đăng ký
         txtRegister.setOnClickListener {
             startActivity(Intent(this, RegisterActivity::class.java))
         }
@@ -50,16 +49,19 @@ class LoginActivity : AppCompatActivity() {
     private fun performLogin(user: String, pass: String) {
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                val response = RetrofitClient.instance.login(LoginRequest(user, pass))
-                
+                // Sử dụng đường dẫn đầy đủ để tránh Argument type mismatch
+                val request = com.example.fe.model.LoginRequest(user, pass)
+                val response = RetrofitClient.instance.login(request)
+
                 withContext(Dispatchers.Main) {
                     if (response.isSuccessful && response.body() != null) {
                         val loginResponse = response.body()!!
-                        
+
                         if (loginResponse.success && loginResponse.data != null) {
-                            val role = loginResponse.data.user.role
-                            Toast.makeText(this@LoginActivity, "Chào mừng ${loginResponse.data.user.full_name}!", Toast.LENGTH_SHORT).show()
-                            navigateByRole(role)
+                            val userData = loginResponse.data!!.user
+                            val userRole = userData.role
+                            Toast.makeText(this@LoginActivity, "Chào mừng ${userData.full_name}!", Toast.LENGTH_SHORT).show()
+                            navigateByRole(userRole)
                         } else {
                             Toast.makeText(this@LoginActivity, loginResponse.message, Toast.LENGTH_SHORT).show()
                         }
@@ -81,10 +83,11 @@ class LoginActivity : AppCompatActivity() {
             "waitstaff" -> Intent(this, WaitstaffActivity::class.java)
             "kitchen" -> Intent(this, KitchenActivity::class.java)
             else -> {
-                Toast.makeText(this, "Role '$role' không có quyền truy cập!", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "Quyền '$role' không được phép truy cập!", Toast.LENGTH_SHORT).show()
                 return
             }
         }
+        intent.putExtra("USER_ROLE", role)
         startActivity(intent)
         finish()
     }

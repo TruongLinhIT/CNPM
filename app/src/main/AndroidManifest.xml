@@ -14,26 +14,22 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.FE"
-        android:usesCleartextTraffic="true"> <activity
-        android:name=".KitchenActivity"
-        android:exported="false" />
-        <activity
-            android:name=".WaitstaffActivity"
-            android:exported="false" />
-        <activity
-            android:name=".ManagerActivity"
-            android:exported="false" />
+        android:usesCleartextTraffic="true">
 
-        <activity
-            android:name=".QuanLyNhanVienActivity"
-            android:exported="false" />
-        <activity
-            android:name=".QuanLyMonAnActivity"
-            android:exported="false" />
-        <activity
-            android:name=".DoanhThuActivity"
-            android:exported="false" />
+        <!-- Manager Screens -->
+        <activity android:name=".ManagerActivity" android:exported="false" />
+        <activity android:name=".QuanLyDanhMucActivity" android:exported="false" />
+        <activity android:name=".QuanLyMonAnActivity" android:exported="false" />
+        <activity android:name=".QuanLyNhanVienActivity" android:exported="false" />
+        <activity android:name=".DoanhThuActivity" android:exported="false" />
+        <activity android:name=".TableActivity" android:exported="false" />
 
+        <!-- Waitstaff Screens -->
+        <activity android:name=".WaitstaffActivity" android:exported="false" />
+        <activity android:name=".OrderActivity" android:exported="false" />
+
+        <!-- Other Screens -->
+        <activity android:name=".KitchenActivity" android:exported="false" />
         <activity
             android:name=".login.LoginActivity"
             android:exported="true">
@@ -42,12 +38,9 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity
-            android:name=".MainActivity"
-            android:exported="false" />
-        <activity
-            android:name=".register.RegisterActivity"
-            android:exported="false" />
+        <activity android:name=".MainActivity" android:exported="false" />
+        <activity android:name=".register.RegisterActivity" android:exported="false" />
+
     </application>
 
 </manifest>
