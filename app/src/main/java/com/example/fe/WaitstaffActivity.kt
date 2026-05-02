@@ -36,11 +36,14 @@ class WaitstaffActivity : AppCompatActivity() {
     private fun setupRecyclerView() {
         adapter = TableAdapter(emptyList()) { table ->
             if (table.status == "Available") {
-                // Nếu bàn trống -> Hỏi xác nhận mở bàn và đi tới đặt món
-                openTableAndOrder(table)
-            } else {
-                // Nếu bàn có khách -> Đi tới quản lý đơn hàng bàn đó
+                // Nếu bàn trống -> Đi tới đặt món (Sẽ tạo Order mới)
                 val intent = Intent(this, OrderActivity::class.java)
+                intent.putExtra("TABLE_ID", table.id)
+                intent.putExtra("TABLE_NUMBER", table.number)
+                startActivity(intent)
+            } else {
+                // Nếu bàn có khách -> Đi tới chi tiết bàn để Xem/Thêm món/Thanh toán
+                val intent = Intent(this, TableDetailActivity::class.java)
                 intent.putExtra("TABLE_ID", table.id)
                 intent.putExtra("TABLE_NUMBER", table.number)
                 startActivity(intent)
@@ -48,25 +51,6 @@ class WaitstaffActivity : AppCompatActivity() {
         }
         rvTables.layoutManager = GridLayoutManager(this, 2)
         rvTables.adapter = adapter
-    }
-
-    private fun openTableAndOrder(table: Table) {
-        CoroutineScope(Dispatchers.Main).launch {
-            try {
-                val response = withContext(Dispatchers.IO) {
-                    RetrofitClient.instance.updateTableStatus(table.id, mapOf("status" to "Occupied"))
-                }
-                if (response.isSuccessful) {
-                    val intent = Intent(this@WaitstaffActivity, OrderActivity::class.java)
-                    intent.putExtra("TABLE_ID", table.id)
-                    intent.putExtra("TABLE_NUMBER", table.number)
-                    startActivity(intent)
-                    loadTableList()
-                }
-            } catch (e: Exception) {
-                Toast.makeText(this@WaitstaffActivity, "Lỗi: ${e.message}", Toast.LENGTH_SHORT).show()
-            }
-        }
     }
 
     private fun loadTableList() {

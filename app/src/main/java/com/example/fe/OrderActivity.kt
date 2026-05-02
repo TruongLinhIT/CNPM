@@ -21,6 +21,7 @@ class OrderActivity : AppCompatActivity() {
     
     private var tableId: Int = -1
     private var tableNumber: Int = -1
+    private var existingOrderId: Int = -1
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -28,8 +29,11 @@ class OrderActivity : AppCompatActivity() {
 
         tableId = intent.getIntExtra("TABLE_ID", -1)
         tableNumber = intent.getIntExtra("TABLE_NUMBER", -1)
+        existingOrderId = intent.getIntExtra("ORDER_ID", -1)
 
-        findViewById<TextView>(R.id.tvOrderTitle).text = "Đặt món - Bàn $tableNumber"
+        val titlePrefix = if (existingOrderId != -1) "Gọi thêm" else "Đặt món"
+        findViewById<TextView>(R.id.tvOrderTitle).text = "$titlePrefix - Bàn $tableNumber"
+        
         rvMenu = findViewById(R.id.rvMenuOrder)
         tvTotalItems = findViewById(R.id.tvTotalItems)
         btnSubmit = findViewById(R.id.btnSubmitOrder)
@@ -38,7 +42,11 @@ class OrderActivity : AppCompatActivity() {
         loadMenu()
 
         btnSubmit.setOnClickListener {
-            submitOrder()
+            if (existingOrderId != -1) {
+                addMoreItems()
+            } else {
+                submitNewOrder()
+            }
         }
     }
 
@@ -56,8 +64,15 @@ class OrderActivity : AppCompatActivity() {
                 val response = RetrofitClient.instance.getMenuItems()
                 withContext(Dispatchers.Main) {
                     if (response.isSuccessful && response.body() != null) {
-                        val items = response.body()!!.data.map {
-                            MonAn(it.item_id, it.name, it.price, it.image_url ?: "", it.description ?: "")
+                        val menuItems: List<MenuItemData> = response.body()!!.data
+                        val items = menuItems.map { item ->
+                            MonAn(
+                                id = item.item_id,
+                                tenMon = item.name,
+                                gia = item.price,
+                                hinhAnh = item.image_url ?: "",
+                                moTa = item.description ?: ""
+                            )
                         }
                         adapter.updateData(items)
                     }
@@ -75,7 +90,7 @@ class OrderActivity : AppCompatActivity() {
         tvTotalItems.text = "Đã chọn: $totalCount món"
     }
 
-    private fun submitOrder() {
+    private fun submitNewOrder() {
         val selectedItems = adapter.getSelectedItems()
         if (selectedItems.isEmpty()) {
             Toast.makeText(this, "Vui lòng chọn món", Toast.LENGTH_SHORT).show()
@@ -92,10 +107,40 @@ class OrderActivity : AppCompatActivity() {
                 val response = RetrofitClient.instance.createOrder(request)
                 withContext(Dispatchers.Main) {
                     if (response.isSuccessful) {
-                        Toast.makeText(this@OrderActivity, "Gửi đơn hàng thành công", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this@OrderActivity, "Tạo đơn hàng thành công", Toast.LENGTH_SHORT).show()
                         finish()
                     } else {
-                        Toast.makeText(this@OrderActivity, "Lỗi gửi đơn hàng", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this@OrderActivity, "Lỗi tạo đơn hàng", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(this@OrderActivity, "Lỗi kết nối", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+    }
+
+    private fun addMoreItems() {
+        val selectedItems = adapter.getSelectedItems()
+        if (selectedItems.isEmpty()) {
+            Toast.makeText(this, "Vui lòng chọn món", Toast.LENGTH_SHORT).show()
+            return
+        }
+
+        val request = AddItemsRequest(
+            items = selectedItems.map { OrderItemRequest(it.item_id, it.quantity) }
+        )
+
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val response = RetrofitClient.instance.addOrderItems(existingOrderId, request)
+                withContext(Dispatchers.Main) {
+                    if (response.isSuccessful) {
+                        Toast.makeText(this@OrderActivity, "Đã thêm món vào đơn hàng", Toast.LENGTH_SHORT).show()
+                        finish()
+                    } else {
+                        Toast.makeText(this@OrderActivity, "Lỗi thêm món", Toast.LENGTH_SHORT).show()
                     }
                 }
             } catch (e: Exception) {

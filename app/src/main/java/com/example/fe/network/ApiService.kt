@@ -64,7 +64,20 @@ interface ApiService {
 
     @GET("api/orders")
     suspend fun getOrders(): Response<OrderListResponse>
+
+    @GET("api/orders/{id}")
+    suspend fun getOrderById(@Path("id") id: Int): Response<OrderResponse>
     
+    @PATCH("api/orders/{id}/status")
+    suspend fun updateOrderStatus(@Path("id") id: Int, @Body status: UpdateStatusRequest): Response<OrderResponse>
+
+    @PATCH("api/orders/items/{detailId}/status")
+    suspend fun updateOrderDetailStatus(@Path("detailId") detailId: Int, @Body status: UpdateStatusRequest): Response<OrderResponse>
+
     @POST("api/orders/{id}/items")
-    suspend fun addOrderItems(@Path("id") id: Int, @Body items: List<OrderItemRequest>): Response<OrderResponse>
+    suspend fun addOrderItems(@Path("id") id: Int, @Body request: AddItemsRequest): Response<OrderResponse>
+
+    // --- PAYMENTS ---
+    @POST("api/payments")
+    suspend fun createPayment(@Body request: PaymentRequest): Response<PaymentResponse>
 }

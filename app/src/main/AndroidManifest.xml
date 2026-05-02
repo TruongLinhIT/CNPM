@@ -27,6 +27,7 @@
         <!-- Waitstaff Screens -->
         <activity android:name=".WaitstaffActivity" android:exported="false" />
         <activity android:name=".OrderActivity" android:exported="false" />
+        <activity android:name=".TableDetailActivity" android:exported="false" />
 
         <!-- Other Screens -->
         <activity android:name=".KitchenActivity" android:exported="false" />
