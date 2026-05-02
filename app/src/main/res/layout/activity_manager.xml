@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/main"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp"
+    android:gravity="center_horizontal"
+    tools:context=".ManagerActivity">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="GIAO DIỆN QUẢN TRỊ"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="32dp"
+        android:layout_marginTop="32dp"/>
+
+    <Button
+        android:id="@+id/btnQuanLyBanAn"
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:text="Quản Lý Bàn Ăn"
+        android:layout_marginBottom="16dp"/>
+
+    <Button
+        android:id="@+id/btnQuanLyDanhMuc"
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:text="Quản Lý Danh Mục"
+        android:layout_marginBottom="16dp"/>
+
+    <Button
+        android:id="@+id/btnQuanLyMonAn"
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:text="Quản Lý Món Ăn"
+        android:layout_marginBottom="16dp"/>
+
+    <Button
+        android:id="@+id/btnQuanLyNhanVien"
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:text="Quản Lý Nhân Viên"
+        android:layout_marginBottom="16dp"/>
+
+    <Button
+        android:id="@+id/btnQuanLyDoanhThu"
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:text="Quản Lý Doanh Thu"
+        android:layout_marginBottom="16dp"/>
+
+    <Button
+        android:id="@+id/btnLogout"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Đăng xuất"
+        android:backgroundTint="#F44336"
+        android:layout_marginTop="32dp"/>
+
+</LinearLayout>
