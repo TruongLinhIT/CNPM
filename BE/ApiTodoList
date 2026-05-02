@@ -24,7 +24,7 @@ Middleware yêu cầu: Chỉ Manager mới có quyền truy cập.
 📦 Module 4: Quản lý Danh mục & Thực đơn (Categories & Menu Items)
 [ ] GET /api/categories : Lấy danh sách danh mục món ăn (Public cho staff).........
 
-[ ] POST /api/categories : Thêm danh mục mới (Chỉ Manager).
+[ ] POST /api/categories : Thêm danh mục mới (Chỉ Manager). done
 
 [ ] GET /api/menu : Lấy danh sách món ăn (có hỗ trợ filter theo category_id và is_available).
 
