@@ -1,9 +1,9 @@
 const express = require('express');
 const { revenueReport } = require('../controllers/report.controller');
-const { authenticate, requireRoles } = require('../middlewares/auth.middleware');
 
 const router = express.Router();
 
-router.get('/revenue', authenticate, requireRoles('Manager'), revenueReport);
+// Gỡ bỏ authenticate để chạy đơn giản theo yêu cầu
+router.get('/revenue', revenueReport);
 
 module.exports = router;

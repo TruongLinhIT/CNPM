@@ -49,8 +49,7 @@ class LoginActivity : AppCompatActivity() {
     private fun performLogin(user: String, pass: String) {
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                // Sử dụng đường dẫn đầy đủ để tránh Argument type mismatch
-                val request = com.example.fe.model.LoginRequest(user, pass)
+                val request = LoginRequest(user, pass)
                 val response = RetrofitClient.instance.login(request)
 
                 withContext(Dispatchers.Main) {

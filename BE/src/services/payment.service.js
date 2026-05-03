@@ -3,14 +3,9 @@ const { Payment, Order, DiningTable } = require('../models');
 async function createPayment(payload) {
   const { order_id, amount_paid, payment_method } = payload;
 
-  if (!order_id || !amount_paid || !payment_method) {
-    const err = new Error('Missing payment fields');
-    err.statusCode = 400;
-    throw err;
-  }
-
-  if (Number(amount_paid) <= 0) {
-    const err = new Error('Amount paid must be greater than zero');
+  // Senior Fix: Kiểm tra undefined/null thay vì dùng ! để cho phép giá trị 0
+  if (order_id === undefined || amount_paid === undefined || !payment_method) {
+    const err = new Error('Missing payment fields (order_id, amount_paid, payment_method)');
     err.statusCode = 400;
     throw err;
   }
@@ -28,6 +23,7 @@ async function createPayment(payload) {
     payment_method
   });
 
+  // Cập nhật trạng thái đơn hàng và giải phóng bàn
   await order.update({ status: 'Paid' });
 
   const table = await DiningTable.findByPk(order.table_id);

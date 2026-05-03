@@ -21,7 +21,7 @@ class KitchenOrderAdapter(
         val tvStatus: TextView = view.findViewById(R.id.tvKitchenOrderStatus)
         val tvTime: TextView = view.findViewById(R.id.tvKitchenOrderTime)
         val llItems: LinearLayout = view.findViewById(R.id.llKitchenItems)
-        val btnReady: Button = view.findViewById(R.id.btnKitchenReady)
+        // btnReady is no longer used as per user request
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
@@ -31,45 +31,44 @@ class KitchenOrderAdapter(
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         val order = orders[position]
-        holder.tvTable.text = "Bàn ${order.DiningTable?.number ?: order.table_id}"
+        holder.tvTable.text = "Bàn ${order.diningTable?.number ?: order.table_id}"
         holder.tvStatus.text = order.status
         holder.tvTime.text = order.created_at
 
         holder.llItems.removeAllViews()
-        order.OrderDetails?.forEach { detail ->
-            val itemView = LayoutInflater.from(holder.itemView.context).inflate(android.R.layout.simple_list_item_2, holder.llItems, false)
-            val text1 = itemView.findViewById<TextView>(android.R.id.text1)
-            val text2 = itemView.findViewById<TextView>(android.R.id.text2)
+        order.orderDetails?.forEach { detail ->
+            val itemView = LayoutInflater.from(holder.itemView.context)
+                .inflate(R.layout.item_kitchen_detail, holder.llItems, false)
             
-            text1.text = "${detail.MenuItem?.name} x ${detail.quantity}"
-            text2.text = "Trạng thái: ${detail.status}"
+            val tvName = itemView.findViewById<TextView>(R.id.tvDetailName)
+            val tvStatus = itemView.findViewById<TextView>(R.id.tvDetailStatus)
+            val btnDone = itemView.findViewById<Button>(R.id.btnDoneItem)
             
-            // Màu sắc theo trạng thái món
-            text2.setTextColor(when(detail.status) {
-                "Pending" -> 0xFFFF0000.toInt() // Đỏ
-                "Preparing" -> 0xFF0000FF.toInt() // Xanh dương
-                "Ready" -> 0xFF008000.toInt() // Xanh lá
-                else -> 0xFF666666.toInt()
-            })
+            tvName.text = "${detail.menuItem?.name} x ${detail.quantity}"
+            tvStatus.text = "Trạng thái: ${detail.status}"
+            
+            // Colors for status
+            when(detail.status) {
+                "Pending" -> tvStatus.setTextColor(0xFFFF0000.toInt())
+                "Preparing" -> tvStatus.setTextColor(0xFF0000FF.toInt())
+                "Ready" -> tvStatus.setTextColor(0xFF008000.toInt())
+            }
 
-            itemView.setOnClickListener {
-                val nextStatus = when(detail.status) {
-                    "Pending" -> "Preparing"
-                    "Preparing" -> "Ready"
-                    else -> null
-                }
-                nextStatus?.let { status ->
-                    onItemStatusClick(detail.order_detail_id, status)
+            // Hide "XONG" button if already Ready or Served
+            if (detail.status == "Ready" || detail.status == "Served") {
+                btnDone.visibility = View.GONE
+            } else {
+                btnDone.visibility = View.VISIBLE
+                btnDone.setOnClickListener {
+                    // Senior Fix: Transition directly to "Ready" instead of "Preparing"
+                    onItemStatusClick(detail.order_detail_id, "Ready")
                 }
             }
+            
             holder.llItems.addView(itemView)
         }
-
-        holder.btnReady.setOnClickListener { onReadyClick(order) }
         
-        // Chỉ hiện nút "Hoàn thành" nếu toàn bộ món đã Ready
-        val allReady = order.OrderDetails?.all { it.status == "Ready" || it.status == "Served" } ?: false
-        holder.btnReady.visibility = if (allReady) View.VISIBLE else View.GONE
+        // Removed btnReady logic as per user request to hide "Complete All" button
     }
 
     override fun getItemCount() = orders.size

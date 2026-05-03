@@ -93,10 +93,11 @@ class OrderActivity : AppCompatActivity() {
     private fun submitNewOrder() {
         val selectedItems = adapter.getSelectedItems()
         if (selectedItems.isEmpty()) {
-            Toast.makeText(this, "Vui lòng chọn món", Toast.LENGTH_SHORT).show()
+            Toast.makeText(this, "Vui lòng chọn ít nhất 1 món", Toast.LENGTH_SHORT).show()
             return
         }
 
+        // Tạo request đơn giản (user_id mặc định null nếu server cho phép hoặc tùy chỉnh sau)
         val request = CreateOrderRequest(
             table_id = tableId,
             items = selectedItems.map { OrderItemRequest(it.item_id, it.quantity) }
@@ -107,15 +108,16 @@ class OrderActivity : AppCompatActivity() {
                 val response = RetrofitClient.instance.createOrder(request)
                 withContext(Dispatchers.Main) {
                     if (response.isSuccessful) {
-                        Toast.makeText(this@OrderActivity, "Tạo đơn hàng thành công", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this@OrderActivity, "Tạo đơn hàng thành công!", Toast.LENGTH_SHORT).show()
                         finish()
                     } else {
-                        Toast.makeText(this@OrderActivity, "Lỗi tạo đơn hàng", Toast.LENGTH_SHORT).show()
+                        val errorMsg = response.errorBody()?.string() ?: "Lỗi từ Server"
+                        Toast.makeText(this@OrderActivity, "Lỗi (${response.code()}): $errorMsg", Toast.LENGTH_LONG).show()
                     }
                 }
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {
-                    Toast.makeText(this@OrderActivity, "Lỗi kết nối", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@OrderActivity, "Lỗi kết nối: ${e.message}", Toast.LENGTH_SHORT).show()
                 }
             }
         }
@@ -123,10 +125,7 @@ class OrderActivity : AppCompatActivity() {
 
     private fun addMoreItems() {
         val selectedItems = adapter.getSelectedItems()
-        if (selectedItems.isEmpty()) {
-            Toast.makeText(this, "Vui lòng chọn món", Toast.LENGTH_SHORT).show()
-            return
-        }
+        if (selectedItems.isEmpty()) return
 
         val request = AddItemsRequest(
             items = selectedItems.map { OrderItemRequest(it.item_id, it.quantity) }
@@ -137,15 +136,13 @@ class OrderActivity : AppCompatActivity() {
                 val response = RetrofitClient.instance.addOrderItems(existingOrderId, request)
                 withContext(Dispatchers.Main) {
                     if (response.isSuccessful) {
-                        Toast.makeText(this@OrderActivity, "Đã thêm món vào đơn hàng", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this@OrderActivity, "Đã thêm món vào đơn", Toast.LENGTH_SHORT).show()
                         finish()
-                    } else {
-                        Toast.makeText(this@OrderActivity, "Lỗi thêm món", Toast.LENGTH_SHORT).show()
                     }
                 }
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {
-                    Toast.makeText(this@OrderActivity, "Lỗi kết nối", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@OrderActivity, "Lỗi: ${e.message}", Toast.LENGTH_SHORT).show()
                 }
             }
         }

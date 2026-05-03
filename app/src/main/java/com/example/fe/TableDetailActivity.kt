@@ -11,10 +11,7 @@ import androidx.appcompat.widget.Toolbar
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.fe.adapter.OrderDetailAdapter
-import com.example.fe.model.OrderData
-import com.example.fe.model.OrderStatus
-import com.example.fe.model.PaymentRequest
-import com.example.fe.model.UpdateStatusRequest
+import com.example.fe.model.*
 import com.example.fe.network.RetrofitClient
 import kotlinx.coroutines.*
 import java.text.NumberFormat
@@ -70,7 +67,6 @@ class TableDetailActivity : AppCompatActivity() {
 
     private fun setupRecyclerView() {
         adapter = OrderDetailAdapter(emptyList()) { detail ->
-            // Khi nhấn nút "PHỤC VỤ"
             serveItem(detail.order_detail_id)
         }
         rvItems.layoutManager = LinearLayoutManager(this)
@@ -80,35 +76,53 @@ class TableDetailActivity : AppCompatActivity() {
     private fun loadTableOrder() {
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                val response = RetrofitClient.instance.getOrders()
+                val response = RetrofitClient.instance.getActiveOrders()
                 withContext(Dispatchers.Main) {
                     if (response.isSuccessful && response.body() != null) {
-                        // Tìm order active của bàn này
-                        val activeOrder = response.body()!!.data.find { 
-                            it.table_id == tableId && it.status != OrderStatus.PAID && it.status != OrderStatus.CANCELLED 
-                        }
-                        
+                        val activeOrder = response.body()!!.data.find { it.table_id == tableId }
                         if (activeOrder != null) {
                             currentOrder = activeOrder
                             updateUI(activeOrder)
                         } else {
-                            Toast.makeText(this@TableDetailActivity, "Bàn này hiện chưa có đơn hàng", Toast.LENGTH_SHORT).show()
-                            finish()
+                            showStuckTableDialog()
                         }
                     }
                 }
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {
-                    Toast.makeText(this@TableDetailActivity, "Lỗi: ${e.message}", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@TableDetailActivity, "Lỗi kết nối", Toast.LENGTH_SHORT).show()
                 }
             }
+        }
+    }
+
+    private fun showStuckTableDialog() {
+        AlertDialog.Builder(this)
+            .setTitle("Thông báo")
+            .setMessage("Bàn $tableNumber đang báo 'Bận' nhưng không tìm thấy đơn hàng. Bạn có muốn dọn bàn này về trạng thái 'Trống' không?")
+            .setPositiveButton("Dọn bàn") { _, _ -> forceClearTable() }
+            .setNegativeButton("Hủy") { _, _ -> finish() }
+            .setCancelable(false)
+            .show()
+    }
+
+    private fun forceClearTable() {
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val response = RetrofitClient.instance.updateTableStatus(tableId, UpdateStatusRequest("Available"))
+                withContext(Dispatchers.Main) {
+                    if (response.isSuccessful) {
+                        Toast.makeText(this@TableDetailActivity, "Bàn $tableNumber đã sẵn sàng!", Toast.LENGTH_SHORT).show()
+                        finish()
+                    }
+                }
+            } catch (e: Exception) { /* Error handling */ }
         }
     }
 
     private fun updateUI(order: OrderData) {
         val formatter = NumberFormat.getCurrencyInstance(Locale("vi", "VN"))
         adapter.updateData(order.orderDetails ?: emptyList())
-        
         tvSubtotal.text = formatter.format(order.subtotal)
         tvTax.text = formatter.format(order.tax)
         tvDiscount.text = "-${formatter.format(order.discount)}"
@@ -120,27 +134,28 @@ class TableDetailActivity : AppCompatActivity() {
             try {
                 val response = RetrofitClient.instance.updateOrderDetailStatus(detailId, UpdateStatusRequest(OrderStatus.SERVED))
                 withContext(Dispatchers.Main) {
-                    if (response.isSuccessful) {
-                        loadTableOrder() // Refresh dữ liệu
-                    }
+                    if (response.isSuccessful) loadTableOrder()
                 }
-            } catch (e: Exception) {
-                withContext(Dispatchers.Main) {
-                    Toast.makeText(this@TableDetailActivity, "Lỗi: ${e.message}", Toast.LENGTH_SHORT).show()
-                }
-            }
+            } catch (e: Exception) { /* Error handling */ }
         }
     }
 
     private fun showPaymentDialog() {
-        val options = arrayOf("Tiền mặt", "Thẻ ngân hàng", "Ví điện tử")
-        val methods = arrayOf("Cash", "Card", "Digital")
-        
+        // Senior Fix: Kiểm tra xem bếp đã nấu xong tất cả các món chưa
+        val hasIncompleteItems = currentOrder?.orderDetails?.any { 
+            it.status == "Pending" || it.status == "Preparing" 
+        } ?: false
+
+        if (hasIncompleteItems) {
+            Toast.makeText(this, "Không thể thanh toán! Vui lòng đợi bếp nấu xong tất cả các món.", Toast.LENGTH_LONG).show()
+            return
+        }
+
+        // Senior Fix: Chỉ giữ lại thanh toán Tiền mặt và ẩn các phương thức khác
         AlertDialog.Builder(this)
-            .setTitle("Xác nhận thanh toán")
-            .setItems(options) { _, which ->
-                performPayment(methods[which])
-            }
+            .setTitle("Thanh toán hóa đơn")
+            .setMessage("Xác nhận thanh toán TIỀN MẶT cho bàn $tableNumber?")
+            .setPositiveButton("Xác nhận") { _, _ -> performPayment("Cash") }
             .setNegativeButton("Hủy", null)
             .show()
     }
@@ -151,15 +166,13 @@ class TableDetailActivity : AppCompatActivity() {
 
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                val response = RetrofitClient.instance.createPayment(
-                    PaymentRequest(orderId, method, total)
-                )
+                val response = RetrofitClient.instance.createPayment(PaymentRequest(orderId, method, total))
                 withContext(Dispatchers.Main) {
                     if (response.isSuccessful) {
-                        Toast.makeText(this@TableDetailActivity, "Thanh toán thành công. Bàn đã được giải phóng!", Toast.LENGTH_LONG).show()
+                        Toast.makeText(this@TableDetailActivity, "Thanh toán thành công!", Toast.LENGTH_LONG).show()
                         finish()
                     } else {
-                        Toast.makeText(this@TableDetailActivity, "Lỗi thanh toán từ Server", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this@TableDetailActivity, "Lỗi thanh toán từ server", Toast.LENGTH_SHORT).show()
                     }
                 }
             } catch (e: Exception) {

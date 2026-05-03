@@ -4,110 +4,116 @@ const {
   OrderDetail,
   MenuItem,
   DiningTable,
-  sequelize
+  sequelize,
+  User
 } = require('../models');
-const { getIO } = require('../utils/socket');
 
 function toNumber(value) {
-  const numberValue = Number(value);
-  return Number.isNaN(numberValue) ? 0 : numberValue;
+  const num = Number(value);
+  return isNaN(num) ? 0 : num;
 }
 
 async function createOrder(payload, userId) {
   const { table_id, items, discount } = payload;
 
   if (!table_id || !Array.isArray(items) || items.length === 0) {
-    const err = new Error('Invalid order payload');
+    const err = new Error('Dữ liệu đơn hàng không hợp lệ (thiếu bàn hoặc món)');
     err.statusCode = 400;
     throw err;
   }
 
   const table = await DiningTable.findByPk(table_id);
-  if (!table) {
-    const err = new Error('Dining table not found');
-    err.statusCode = 404;
-    throw err;
+  if (!table) throw new Error('Không tìm thấy bàn ăn');
+
+  // Đảm bảo có userId hợp lệ (Lấy user đầu tiên nếu App không gửi)
+  let finalUserId = userId;
+  if (!finalUserId) {
+    const firstUser = await User.findOne();
+    finalUserId = firstUser ? firstUser.user_id : 1;
   }
-
-  const itemIds = items.map((item) => item.item_id);
-  const uniqueItemIds = Array.from(new Set(itemIds));
-  const menuItems = await MenuItem.findAll({
-    where: { item_id: { [Op.in]: uniqueItemIds } }
-  });
-
-  if (menuItems.length !== uniqueItemIds.length) {
-    const err = new Error('One or more menu items not found');
-    err.statusCode = 404;
-    throw err;
-  }
-
-  const menuMap = new Map(menuItems.map((item) => [item.item_id, item]));
 
   const tx = await sequelize.transaction();
   try {
     let subtotal = 0;
+    const order = await Order.create({
+      user_id: finalUserId,
+      table_id,
+      subtotal: 0,
+      tax: 0,
+      discount: toNumber(discount),
+      total_amount: 0,
+      status: 'Pending'
+    }, { transaction: tx });
 
-    const order = await Order.create(
-      {
-        user_id: userId,
-        table_id,
-        subtotal: 0,
-        tax: 0,
-        discount: toNumber(discount),
-        total_amount: 0,
-        status: 'Pending'
-      },
-      { transaction: tx }
-    );
+    const detailPayload = [];
+    for (const item of items) {
+      const menuItem = await MenuItem.findByPk(item.item_id);
+      if (!menuItem) continue;
 
-    const detailPayload = items.map((item) => {
-      const menuItem = menuMap.get(item.item_id);
-      const quantity = toNumber(item.quantity || 1);
-      if (quantity <= 0) {
-        const err = new Error('Item quantity must be greater than zero');
-        err.statusCode = 400;
-        throw err;
-      }
-      const priceAtTime = toNumber(menuItem.price);
-      subtotal += priceAtTime * quantity;
+      const qty = toNumber(item.quantity);
+      const price = toNumber(menuItem.price);
+      subtotal += price * qty;
 
-      return {
+      detailPayload.push({
         order_id: order.order_id,
         item_id: item.item_id,
-        quantity,
-        price_at_time: priceAtTime,
-        notes: item.notes || null,
+        quantity: qty,
+        price_at_time: price,
         status: 'Pending'
-      };
-    });
-
-    const taxRate = toNumber(process.env.TAX_RATE || 0);
-    const tax = subtotal * taxRate;
-    const discountValue = toNumber(discount);
-    const totalAmount = Math.max(subtotal + tax - discountValue, 0);
-
-    await OrderDetail.bulkCreate(detailPayload, { transaction: tx });
-
-    await order.update(
-      {
-        subtotal,
-        tax,
-        discount: discountValue,
-        total_amount: totalAmount
-      },
-      { transaction: tx }
-    );
-
-    if (table.status !== 'Occupied') {
-      await table.update({ status: 'Occupied' }, { transaction: tx });
+      });
     }
 
+    const tax = subtotal * 0.1; // VAT 10%
+    const total = Math.max(subtotal + tax - toNumber(discount), 0);
+
+    await OrderDetail.bulkCreate(detailPayload, { transaction: tx });
+    await order.update({ subtotal, tax, total_amount: total }, { transaction: tx });
+    await table.update({ status: 'Occupied' }, { transaction: tx });
+
     await tx.commit();
+    return order;
+  } catch (error) {
+    await tx.rollback();
+    throw error;
+  }
+}
 
-    try {
-      getIO().emit('order:new', { order_id: order.order_id, table_id });
-    } catch (socketError) {}
+async function addItemsToOrder(orderId, itemsPayload) {
+  const order = await Order.findByPk(orderId);
+  if (!order) throw new Error('Không tìm thấy đơn hàng để thêm món');
 
+  const { items } = itemsPayload;
+  const tx = await sequelize.transaction();
+  try {
+    let extraSubtotal = 0;
+    for (const item of items) {
+      const menuItem = await MenuItem.findByPk(item.item_id);
+      if (!menuItem) continue;
+
+      const price = toNumber(menuItem.price);
+      const qty = toNumber(item.quantity);
+      extraSubtotal += price * qty;
+
+      await OrderDetail.create({
+        order_id: orderId,
+        item_id: item.item_id,
+        quantity: qty,
+        price_at_time: price,
+        status: 'Pending'
+      }, { transaction: tx });
+    }
+
+    const newSubtotal = toNumber(order.subtotal) + extraSubtotal;
+    const newTax = newSubtotal * 0.1;
+    const newTotal = Math.max(newSubtotal + newTax - toNumber(order.discount), 0);
+
+    await order.update({
+      subtotal: newSubtotal,
+      tax: newTax,
+      total_amount: newTotal
+    }, { transaction: tx });
+
+    await tx.commit();
     return order;
   } catch (error) {
     await tx.rollback();
@@ -117,40 +123,14 @@ async function createOrder(payload, userId) {
 
 async function updateOrderStatus(orderId, status) {
   const order = await Order.findByPk(orderId);
-  if (!order) {
-    const err = new Error('Order not found');
-    err.statusCode = 404;
-    throw err;
-  }
-
-  await order.update({ status });
-
-  try {
-    getIO().emit('order:status', { order_id: order.order_id, status });
-  } catch (socketError) {}
-
+  if (order) await order.update({ status });
   return order;
 }
 
 async function updateOrderDetailStatus(detailId, status) {
   const detail = await OrderDetail.findByPk(detailId);
-  if (!detail) {
-    const err = new Error('Order detail not found');
-    err.statusCode = 404;
-    throw err;
-  }
-
-  await detail.update({ status });
-
-  try {
-    getIO().emit('order:item-status', {
-      order_id: detail.order_id,
-      order_detail_id: detail.order_detail_id,
-      status
-    });
-  } catch (socketError) {}
-
+  if (detail) await detail.update({ status });
   return detail;
 }
 
-module.exports = { createOrder, updateOrderStatus, updateOrderDetailStatus };
+module.exports = { createOrder, addItemsToOrder, updateOrderStatus, updateOrderDetailStatus };

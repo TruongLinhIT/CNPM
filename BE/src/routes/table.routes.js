@@ -6,18 +6,15 @@ const {
   updateTable,
   deleteTable
 } = require('../controllers/table.controller');
-const { authenticate, requireRoles } = require('../middlewares/auth.middleware');
 
 const router = express.Router();
 
-router.get('/', authenticate, listTables);
-router.get('/:id', authenticate, getTable);
-router.post('/', authenticate, requireRoles('Manager'), createTable);
-
-// Cập nhật trạng thái bàn - Cho phép cả Manager và Waitstaff
-router.put('/:id/status', authenticate, requireRoles('Manager', 'Waitstaff'), updateTable);
-
-router.put('/:id', authenticate, requireRoles('Manager'), updateTable);
-router.delete('/:id', authenticate, requireRoles('Manager'), deleteTable);
+// Gỡ bỏ authenticate để chạy đơn giản theo yêu cầu
+router.get('/', listTables);
+router.get('/:id', getTable);
+router.post('/', createTable);
+router.put('/:id/status', updateTable);
+router.put('/:id', updateTable);
+router.delete('/:id', deleteTable);
 
 module.exports = router;

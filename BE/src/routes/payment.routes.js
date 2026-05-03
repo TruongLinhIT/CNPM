@@ -3,11 +3,11 @@ const {
   createPaymentController,
   listPayments
 } = require('../controllers/payment.controller');
-const { authenticate, requireRoles } = require('../middlewares/auth.middleware');
 
 const router = express.Router();
 
-router.get('/', authenticate, requireRoles('Manager'), listPayments);
-router.post('/', authenticate, requireRoles('Waitstaff', 'Manager'), createPaymentController);
+// Tạm gỡ bỏ authenticate để chạy đơn giản theo yêu cầu
+router.get('/', listPayments);
+router.post('/', createPaymentController);
 
 module.exports = router;

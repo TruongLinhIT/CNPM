@@ -61,14 +61,7 @@
             android:layout_height="wrap_content"
             android:orientation="vertical" />
 
-        <Button
-            android:id="@+id/btnKitchenReady"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:text="HOÀN THÀNH TẤT CẢ"
-            android:backgroundTint="#4CAF50"
-            android:textColor="#FFFFFF"/>
+        <!-- Nút Hoàn thành tất cả đã được loại bỏ theo yêu cầu -->
 
     </LinearLayout>
 </androidx.cardview.widget.CardView>

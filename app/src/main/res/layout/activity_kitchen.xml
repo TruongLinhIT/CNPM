@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/kitchenRoot"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
@@ -9,10 +10,25 @@
     <androidx.appcompat.widget.Toolbar
         android:id="@+id/toolbarKitchen"
         android:layout_width="match_parent"
-        android:layout_height="?attr/actionBarSize"
+        android:layout_height="wrap_content"
         android:background="#FF9800"
-        app:title="NHÀ BẾP - ĐƠN HÀNG ĐANG CHẾ BIẾN"
-        app:titleTextColor="#FFFFFF" />
+        android:minHeight="?attr/actionBarSize"
+        app:title="NHÀ BẾP"
+        app:titleTextColor="#FFFFFF">
+
+        <Button
+            android:id="@+id/btnKitchenLogout"
+            style="?android:attr/buttonStyleSmall"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="end"
+            android:layout_marginEnd="16dp"
+            android:text="Đăng xuất"
+            android:backgroundTint="#F44336"
+            android:textColor="#FFFFFF"
+            android:textSize="12sp" />
+
+    </androidx.appcompat.widget.Toolbar>
 
     <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
         android:id="@+id/swipeRefreshKitchen"

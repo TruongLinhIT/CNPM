@@ -11,9 +11,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.fe.adapter.NhanVienAdapter
-import com.example.fe.model.NhanVien
-import com.example.fe.model.RegisterRequest
-import com.example.fe.model.UpdateUserRequest
+import com.example.fe.model.*
 import com.example.fe.network.RetrofitClient
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import kotlinx.coroutines.CoroutineScope
@@ -31,7 +29,6 @@ class QuanLyNhanVienActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_quan_ly_nhan_vien)
 
-        // 1. Thiết lập RecyclerView
         val rv = findViewById<RecyclerView>(R.id.recyclerViewNhanVien)
         adapter = NhanVienAdapter(danhSachNhanVien,
             onEditClick = { nv -> showDialogSua(nv) },
@@ -40,10 +37,8 @@ class QuanLyNhanVienActivity : AppCompatActivity() {
         rv.layoutManager = LinearLayoutManager(this)
         rv.adapter = adapter
 
-        // 2. Tải dữ liệu từ API
         loadDataFromApi()
 
-        // 3. Nút Thêm nhân viên
         findViewById<FloatingActionButton>(R.id.fabAddNhanVien).setOnClickListener {
             showDialogThem()
         }
@@ -62,13 +57,11 @@ class QuanLyNhanVienActivity : AppCompatActivity() {
                             }
                             adapter.updateData(list)
                         }
-                    } else {
-                        Toast.makeText(this@QuanLyNhanVienActivity, "Lỗi tải danh sách nhân viên", Toast.LENGTH_SHORT).show()
                     }
                 }
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {
-                    Toast.makeText(this@QuanLyNhanVienActivity, "Lỗi kết nối: ${e.message}", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@QuanLyNhanVienActivity, "Lỗi: ${e.message}", Toast.LENGTH_SHORT).show()
                 }
             }
         }
@@ -77,20 +70,15 @@ class QuanLyNhanVienActivity : AppCompatActivity() {
     private fun showDialogThem() {
         val builder = AlertDialog.Builder(this)
         builder.setTitle("Thêm nhân viên mới")
-
         val layout = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(50, 40, 50, 10)
         }
-
         val edtTen = EditText(this).apply { hint = "Họ và tên" }
         val edtUser = EditText(this).apply { hint = "Tên đăng nhập" }
         val edtPass = EditText(this).apply { hint = "Mật khẩu"; inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD }
-        
         val spnRole = Spinner(this)
-        val roleAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, roles)
-        roleAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-        spnRole.adapter = roleAdapter
+        spnRole.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, roles)
 
         layout.addView(edtTen)
         layout.addView(edtUser)
@@ -103,11 +91,8 @@ class QuanLyNhanVienActivity : AppCompatActivity() {
             val user = edtUser.text.toString()
             val pass = edtPass.text.toString()
             val role = spnRole.selectedItem.toString()
-
             if (ten.isNotEmpty() && user.isNotEmpty() && pass.isNotEmpty()) {
                 themNhanVien(RegisterRequest(user, pass, ten, role))
-            } else {
-                Toast.makeText(this, "Vui lòng nhập đủ thông tin", Toast.LENGTH_SHORT).show()
             }
         }
         builder.setNegativeButton("Hủy", null)
@@ -117,45 +102,29 @@ class QuanLyNhanVienActivity : AppCompatActivity() {
     private fun themNhanVien(request: RegisterRequest) {
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                val response = RetrofitClient.instance.register(request)
+                // SỬA TẠI ĐÂY: register -> registerUser
+                val response = RetrofitClient.instance.registerUser(request)
                 withContext(Dispatchers.Main) {
                     if (response.isSuccessful) {
-                        Toast.makeText(this@QuanLyNhanVienActivity, "Thêm nhân viên thành công", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this@QuanLyNhanVienActivity, "Thành công", Toast.LENGTH_SHORT).show()
                         loadDataFromApi()
-                    } else {
-                        Toast.makeText(this@QuanLyNhanVienActivity, "Lỗi: Tên đăng nhập có thể đã tồn tại", Toast.LENGTH_SHORT).show()
                     }
                 }
-            } catch (e: Exception) {
-                withContext(Dispatchers.Main) {
-                    Toast.makeText(this@QuanLyNhanVienActivity, "Lỗi: ${e.message}", Toast.LENGTH_SHORT).show()
-                }
-            }
+            } catch (e: Exception) { /* Log error */ }
         }
     }
 
     private fun showDialogSua(nv: NhanVien) {
         val builder = AlertDialog.Builder(this)
         builder.setTitle("Sửa nhân viên")
-
         val layout = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(50, 40, 50, 10)
         }
-
-        val edtTen = EditText(this).apply { 
-            hint = "Họ và tên"
-            setText(nv.hoTen)
-        }
-        val edtPass = EditText(this).apply { 
-            hint = "Mật khẩu mới (để trống nếu không đổi)"
-            inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD
-        }
-        
+        val edtTen = EditText(this).apply { setText(nv.hoTen) }
+        val edtPass = EditText(this).apply { hint = "Mật khẩu mới (nếu có)"; inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD }
         val spnRole = Spinner(this)
-        val roleAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, roles)
-        roleAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-        spnRole.adapter = roleAdapter
+        spnRole.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, roles)
         spnRole.setSelection(roles.indexOf(nv.role))
 
         layout.addView(edtTen)
@@ -167,10 +136,7 @@ class QuanLyNhanVienActivity : AppCompatActivity() {
             val ten = edtTen.text.toString()
             val pass = edtPass.text.toString().takeIf { it.isNotEmpty() }
             val role = spnRole.selectedItem.toString()
-
-            if (ten.isNotEmpty()) {
-                capNhatNhanVien(nv.id, UpdateUserRequest(ten, role, pass))
-            }
+            capNhatNhanVien(nv.id, UpdateUserRequest(ten, role, pass))
         }
         builder.setNegativeButton("Hủy", null)
         builder.show()
@@ -182,15 +148,11 @@ class QuanLyNhanVienActivity : AppCompatActivity() {
                 val response = RetrofitClient.instance.updateUser(id, request)
                 withContext(Dispatchers.Main) {
                     if (response.isSuccessful) {
-                        Toast.makeText(this@QuanLyNhanVienActivity, "Cập nhật thành công", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this@QuanLyNhanVienActivity, "Đã cập nhật", Toast.LENGTH_SHORT).show()
                         loadDataFromApi()
                     }
                 }
-            } catch (e: Exception) {
-                withContext(Dispatchers.Main) {
-                    Toast.makeText(this@QuanLyNhanVienActivity, "Lỗi: ${e.message}", Toast.LENGTH_SHORT).show()
-                }
-            }
+            } catch (e: Exception) { /* Log error */ }
         }
     }
 
@@ -203,16 +165,9 @@ class QuanLyNhanVienActivity : AppCompatActivity() {
                     try {
                         val response = RetrofitClient.instance.deleteUser(nv.id)
                         withContext(Dispatchers.Main) {
-                            if (response.isSuccessful) {
-                                Toast.makeText(this@QuanLyNhanVienActivity, "Đã xóa nhân viên", Toast.LENGTH_SHORT).show()
-                                loadDataFromApi()
-                            }
+                            if (response.isSuccessful) loadDataFromApi()
                         }
-                    } catch (e: Exception) {
-                        withContext(Dispatchers.Main) {
-                            Toast.makeText(this@QuanLyNhanVienActivity, "Lỗi: ${e.message}", Toast.LENGTH_SHORT).show()
-                        }
-                    }
+                    } catch (e: Exception) { /* Log error */ }
                 }
             }
             .setNegativeButton("Hủy", null)

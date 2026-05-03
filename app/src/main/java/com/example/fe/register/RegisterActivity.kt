@@ -33,7 +33,6 @@ class RegisterActivity : AppCompatActivity() {
         val btnRegister = findViewById<Button>(R.id.btnRegister)
         val txtLogin = findViewById<TextView>(R.id.txtLogin)
 
-        // Setup Dropdown cho Role
         val adapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, roles)
         autoCompleteRole.setAdapter(adapter)
 
@@ -43,12 +42,11 @@ class RegisterActivity : AppCompatActivity() {
             val password = edtPassword.text.toString().trim()
             val role = autoCompleteRole.text.toString().trim()
 
-            if (fullName.isEmpty() || username.isEmpty() || password.isEmpty() || role.isEmpty()) {
+            if (fullName.isNotEmpty() && username.isNotEmpty() && password.isNotEmpty() && role.isNotEmpty()) {
+                performRegister(fullName, username, password, role)
+            } else {
                 Toast.makeText(this, "Vui lòng nhập đầy đủ thông tin", Toast.LENGTH_SHORT).show()
-                return@setOnClickListener
             }
-
-            performRegister(fullName, username, password, role)
         }
 
         txtLogin.setOnClickListener {
@@ -60,21 +58,20 @@ class RegisterActivity : AppCompatActivity() {
     private fun performRegister(name: String, user: String, pass: String, role: String) {
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                val request = RegisterRequest(user, pass, name, role)
-                val response = RetrofitClient.instance.register(request)
+                // Senior Fix: Gọi đúng tên hàm registerUser để tránh xung đột với package name
+                val response = RetrofitClient.instance.registerUser(RegisterRequest(user, pass, name, role))
 
                 withContext(Dispatchers.Main) {
                     if (response.isSuccessful && response.body() != null) {
-                        val registerResponse = response.body()!!
-                        if (registerResponse.success) {
+                        val regRes = response.body()!!
+                        if (regRes.success) {
                             Toast.makeText(this@RegisterActivity, "Đăng ký thành công!", Toast.LENGTH_SHORT).show()
-                            startActivity(Intent(this@RegisterActivity, LoginActivity::class.java))
                             finish()
                         } else {
-                            Toast.makeText(this@RegisterActivity, registerResponse.message, Toast.LENGTH_SHORT).show()
+                            Toast.makeText(this@RegisterActivity, regRes.message, Toast.LENGTH_SHORT).show()
                         }
                     } else {
-                        Toast.makeText(this@RegisterActivity, "Đăng ký thất bại", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this@RegisterActivity, "Lỗi đăng ký từ máy chủ", Toast.LENGTH_SHORT).show()
                     }
                 }
             } catch (e: Exception) {

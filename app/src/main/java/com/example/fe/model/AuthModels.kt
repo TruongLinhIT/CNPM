@@ -1,12 +1,6 @@
 package com.example.fe.model
 
-/**
- * 1. Login Models
- */
-data class LoginRequest(
-    val username: String,
-    val password: String
-)
+data class LoginRequest(val username: String, val password: String)
 
 data class LoginResponse(
     val success: Boolean,
@@ -15,12 +9,10 @@ data class LoginResponse(
 )
 
 data class LoginData(
-    val user: User
+    val user: User,
+    val token: String? = null // Thêm token để xác thực request
 )
 
-/**
- * 2. Register Models (Khớp với BE POST /api/users)
- */
 data class RegisterRequest(
     val username: String,
     val password: String,
@@ -28,15 +20,12 @@ data class RegisterRequest(
     val role: String
 )
 
-data class RegisterResponse(
-    val success: Boolean,
-    val message: String,
-    val data: User? // BE trả về thông tin user sau khi tạo
-)
+data class RegisterResponse(val success: Boolean, val message: String, val data: User?)
 
-/**
- * 3. Common User Model
- */
+data class UpdateUserRequest(val full_name: String, val role: String, val password: String? = null)
+
+data class UsersListResponse(val success: Boolean, val message: String, val data: List<User>)
+
 data class User(
     val user_id: Int,
     val username: String,

@@ -2,7 +2,7 @@ package com.example.fe.model
 
 import com.google.gson.annotations.SerializedName
 
-// --- TRẠNG THÁI ĐƠN HÀNG ---
+// --- TRẠNG THÁI ---
 object OrderStatus {
     const val PENDING = "Pending"
     const val PREPARING = "Preparing"
@@ -12,7 +12,7 @@ object OrderStatus {
     const val CANCELLED = "Cancelled"
 }
 
-// --- TABLE MODELS ---
+// --- TABLE ---
 data class Table(
     @SerializedName("table_id") val id: Int,
     @SerializedName("table_number") val number: Int,
@@ -20,61 +20,35 @@ data class Table(
     var status: String
 )
 
-data class TableCreateRequest(
-    val table_number: Int,
-    val capacity: Int
-)
+data class TableCreateRequest(val table_number: Int, val capacity: Int)
 
-data class TableListResponse(
-    val success: Boolean,
-    val message: String,
-    val data: List<Table>
-)
+data class TableListResponse(val success: Boolean, val message: String, val data: List<Table>)
 
-data class TableResponse(
-    val success: Boolean,
-    val message: String,
-    val data: Table?
-)
+data class TableResponse(val success: Boolean, val message: String, val data: Table?)
 
-// --- CATEGORY MODELS ---
-data class Category(
-    val category_id: Int,
-    val name: String
-)
+// --- CATEGORY ---
+data class Category(val category_id: Int, val name: String)
 
-data class CategoryRequest(
-    val name: String
-)
+data class CategoryRequest(val name: String)
 
-data class CategoryListResponse(
-    val success: Boolean,
-    val message: String,
-    val data: List<Category>
-)
+data class CategoryListResponse(val success: Boolean, val message: String, val data: List<Category>)
 
-// --- MENU MODELS ---
+data class CategoryResponse(val success: Boolean, val message: String, val data: Category?)
+
+// --- MENU ---
 data class MenuItemData(
     val item_id: Int,
     val name: String,
-    val description: String?, // Đảm bảo trường này tồn tại
+    val description: String?,
     val price: Double,
     val image_url: String?,
     val is_available: Boolean,
     val category_id: Int?
 )
 
-data class MenuResponse(
-    val success: Boolean,
-    val message: String,
-    val data: List<MenuItemData>
-)
+data class MenuResponse(val success: Boolean, val message: String, val data: List<MenuItemData>)
 
-data class MenuItemResponse(
-    val success: Boolean,
-    val message: String,
-    val data: MenuItemData?
-)
+data class MenuItemResponse(val success: Boolean, val message: String, val data: MenuItemData?)
 
 data class MenuItemRequest(
     val name: String,
@@ -84,7 +58,7 @@ data class MenuItemRequest(
     val is_available: Boolean = true
 )
 
-// --- ORDER MODELS ---
+// --- ORDER ---
 data class OrderData(
     val order_id: Int,
     val user_id: Int,
@@ -96,7 +70,7 @@ data class OrderData(
     val status: String,
     val created_at: String,
     @SerializedName("User") val user: User?,
-    @SerializedName("DiningTable") val diningTable: Table?,
+    @SerializedName("DiningTable") val diningTable: Table?, // Sử dụng diningTable (viết thường)
     @SerializedName("OrderDetails") val orderDetails: List<OrderDetailData>?
 )
 
@@ -107,7 +81,7 @@ data class OrderDetailData(
     val quantity: Int,
     val price_at_time: Double,
     var status: String, 
-    @SerializedName("MenuItem") val menuItem: MenuItemData?
+    @SerializedName("MenuItem") val menuItem: MenuItemData? // Sử dụng menuItem (viết thường)
 )
 
 data class CreateOrderRequest(
@@ -117,41 +91,17 @@ data class CreateOrderRequest(
     val discount: Double = 0.0
 )
 
-data class OrderItemRequest(
-    val item_id: Int,
-    val quantity: Int,
-    val notes: String? = ""
-)
+data class OrderItemRequest(val item_id: Int, val quantity: Int, val notes: String? = "")
 
-data class OrderListResponse(
-    val success: Boolean,
-    val message: String,
-    val data: List<OrderData>
-)
+data class OrderListResponse(val success: Boolean, val message: String, val data: List<OrderData>)
 
-data class OrderResponse(
-    val success: Boolean,
-    val message: String,
-    val data: OrderData?
-)
+data class OrderResponse(val success: Boolean, val message: String, val data: OrderData?)
 
-data class UpdateStatusRequest(
-    val status: String
-)
+data class UpdateStatusRequest(val status: String)
 
-data class AddItemsRequest(
-    val items: List<OrderItemRequest>
-)
+data class AddItemsRequest(val items: List<OrderItemRequest>)
 
-// --- PAYMENT MODELS ---
-data class PaymentRequest(
-    val order_id: Int,
-    val payment_method: String,
-    val amount_paid: Double
-)
+// --- PAYMENT ---
+data class PaymentRequest(val order_id: Int, val payment_method: String, val amount_paid: Double)
 
-data class PaymentResponse(
-    val success: Boolean,
-    val message: String,
-    val data: Any?
-)
+data class PaymentResponse(val success: Boolean, val message: String, val data: Any?)

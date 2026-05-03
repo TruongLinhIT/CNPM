@@ -1,34 +1,25 @@
 const express = require('express');
 const {
   createOrderController,
+  addOrderItemsController,
   listOrders,
+  listActiveOrdersController,
   getOrder,
   updateOrderStatusController,
   updateOrderDetailStatusController
 } = require('../controllers/order.controller');
-const { authenticate, requireRoles } = require('../middlewares/auth.middleware');
 
 const router = express.Router();
 
-router.get('/', authenticate, listOrders);
-router.get('/:id', authenticate, getOrder);
-router.post(
-  '/',
-  authenticate,
-  requireRoles('Waitstaff', 'Manager'),
-  createOrderController
-);
-router.patch(
-  '/:id/status',
-  authenticate,
-  requireRoles('Kitchen', 'Waitstaff', 'Manager'),
-  updateOrderStatusController
-);
-router.patch(
-  '/items/:detailId/status',
-  authenticate,
-  requireRoles('Kitchen', 'Waitstaff', 'Manager'),
-  updateOrderDetailStatusController
-);
+// THỨ TỰ QUAN TRỌNG: Route tĩnh (/active) phải nằm TRƯỚC route động (/:id)
+router.get('/', listOrders);
+router.get('/active', listActiveOrdersController);
+router.get('/:id', getOrder);
+
+router.post('/', createOrderController);
+router.post('/:id/items', addOrderItemsController); // Endpoint cho chức năng Thêm món
+
+router.put('/:id/status', updateOrderStatusController);
+router.put('/items/:detailId/status', updateOrderDetailStatusController);
 
 module.exports = router;

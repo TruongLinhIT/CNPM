@@ -2,31 +2,69 @@ package com.example.fe
 
 import android.os.Bundle
 import android.widget.TextView
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import com.example.fe.model.DonHang
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
+import com.example.fe.adapter.DonHangAdapter
+import com.example.fe.network.RetrofitClient
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.text.NumberFormat
 import java.util.*
 
 class DoanhThuActivity : AppCompatActivity() {
 
+    private lateinit var tvTongDoanhThu: TextView
+    private lateinit var rvDonHang: RecyclerView
+    private lateinit var adapter: DonHangAdapter
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_doanh_thu)
 
-        val tvTong = findViewById<TextView>(R.id.tvTongDoanhThu)
+        tvTongDoanhThu = findViewById(R.id.tvTongDoanhThu)
+        rvDonHang = findViewById(R.id.rvDonHang)
 
-        // 1. Dữ liệu mẫu đơn hàng
-        val danhSachDonHang = listOf(
-            DonHang("DH001", "10:30 15/10", 150000.0),
-            DonHang("DH002", "11:15 15/10", 250000.0),
-            DonHang("DH003", "12:00 15/10", 100000.0)
-        )
+        setupRecyclerView()
+        loadData()
+    }
 
-        // 2. Tính tổng tiền
-        val tongTien = danhSachDonHang.sumOf { it.tongTien }
+    private fun setupRecyclerView() {
+        adapter = DonHangAdapter(emptyList())
+        rvDonHang.layoutManager = LinearLayoutManager(this)
+        rvDonHang.adapter = adapter
+    }
 
-        // Định dạng tiền VNĐ cho đẹp
-        val formatter = NumberFormat.getCurrencyInstance(Locale("vi", "VN"))
-        tvTong.text = formatter.format(tongTien)
+    private fun loadData() {
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                // 1. Lấy báo cáo doanh thu tổng quát
+                val revenueResponse = RetrofitClient.instance.getRevenueReport()
+                
+                // 2. Lấy danh sách toàn bộ đơn hàng để làm lịch sử
+                val ordersResponse = RetrofitClient.instance.getOrders()
+
+                withContext(Dispatchers.Main) {
+                    if (revenueResponse.isSuccessful && revenueResponse.body() != null) {
+                        val revenueData = revenueResponse.body()!!.data
+                        val formatter = NumberFormat.getCurrencyInstance(Locale("vi", "VN"))
+                        tvTongDoanhThu.text = formatter.format(revenueData.total_revenue)
+                    }
+
+                    if (ordersResponse.isSuccessful && ordersResponse.body() != null) {
+                        val orders = ordersResponse.body()!!.data
+                        // Sắp xếp đơn mới nhất lên đầu
+                        adapter.updateData(orders.sortedByDescending { it.order_id })
+                    }
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(this@DoanhThuActivity, "Lỗi tải dữ liệu: ${e.message}", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
     }
 }

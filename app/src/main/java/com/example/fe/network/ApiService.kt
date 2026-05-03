@@ -6,12 +6,12 @@ import retrofit2.http.*
 
 interface ApiService {
 
-    // --- AUTH & USERS ---
+    // --- MODULE 1 & 2: AUTH & USERS ---
     @POST("api/auth/login")
     suspend fun login(@Body request: LoginRequest): Response<LoginResponse>
 
     @POST("api/users")
-    suspend fun register(@Body request: RegisterRequest): Response<RegisterResponse>
+    suspend fun registerUser(@Body request: RegisterRequest): Response<RegisterResponse>
 
     @GET("api/users")
     suspend fun getAllUsers(): Response<UsersListResponse>
@@ -22,7 +22,7 @@ interface ApiService {
     @DELETE("api/users/{id}")
     suspend fun deleteUser(@Path("id") id: Int): Response<RegisterResponse>
 
-    // --- TABLES ---
+    // --- MODULE 3: TABLES ---
     @GET("api/tables")
     suspend fun getTables(): Response<TableListResponse>
 
@@ -30,9 +30,9 @@ interface ApiService {
     suspend fun createTable(@Body request: TableCreateRequest): Response<TableResponse>
 
     @PUT("api/tables/{id}/status")
-    suspend fun updateTableStatus(@Path("id") id: Int, @Body status: Map<String, String>): Response<TableResponse>
+    suspend fun updateTableStatus(@Path("id") id: Int, @Body status: UpdateStatusRequest): Response<TableResponse>
 
-    // --- CATEGORIES ---
+    // --- MODULE 4: MENU ---
     @GET("api/categories")
     suspend fun getCategories(): Response<CategoryListResponse>
 
@@ -45,7 +45,6 @@ interface ApiService {
     @DELETE("api/categories/{id}")
     suspend fun deleteCategory(@Path("id") id: Int): Response<CategoryResponse>
 
-    // --- MENU ---
     @GET("api/menu")
     suspend fun getMenuItems(): Response<MenuResponse>
 
@@ -58,26 +57,35 @@ interface ApiService {
     @DELETE("api/menu/{id}")
     suspend fun deleteMenuItem(@Path("id") id: Int): Response<MenuItemResponse>
 
-    // --- ORDERS ---
+    // --- MODULE 5: ORDERS ---
     @POST("api/orders")
     suspend fun createOrder(@Body request: CreateOrderRequest): Response<OrderResponse>
 
     @GET("api/orders")
     suspend fun getOrders(): Response<OrderListResponse>
 
+    @GET("api/orders/active")
+    suspend fun getActiveOrders(): Response<OrderListResponse>
+
     @GET("api/orders/{id}")
     suspend fun getOrderById(@Path("id") id: Int): Response<OrderResponse>
     
-    @PATCH("api/orders/{id}/status")
+    @PUT("api/orders/{id}/status")
     suspend fun updateOrderStatus(@Path("id") id: Int, @Body status: UpdateStatusRequest): Response<OrderResponse>
 
-    @PATCH("api/orders/items/{detailId}/status")
+    @PUT("api/orders/items/{detailId}/status")
     suspend fun updateOrderDetailStatus(@Path("detailId") detailId: Int, @Body status: UpdateStatusRequest): Response<OrderResponse>
 
     @POST("api/orders/{id}/items")
     suspend fun addOrderItems(@Path("id") id: Int, @Body request: AddItemsRequest): Response<OrderResponse>
 
-    // --- PAYMENTS ---
+    // --- MODULE 6: PAYMENTS & REPORTS ---
     @POST("api/payments")
     suspend fun createPayment(@Body request: PaymentRequest): Response<PaymentResponse>
+
+    @GET("api/reports/revenue")
+    suspend fun getRevenueReport(
+        @Query("start_date") startDate: String? = null,
+        @Query("end_date") endDate: String? = null
+    ): Response<RevenueResponse>
 }

@@ -1,12 +1,18 @@
 package com.example.fe
 
+import android.content.Intent
 import android.os.Bundle
+import android.widget.Button
 import android.widget.Toast
+import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.example.fe.adapter.KitchenOrderAdapter
+import com.example.fe.login.LoginActivity
 import com.example.fe.model.UpdateStatusRequest
 import com.example.fe.network.RetrofitClient
 import kotlinx.coroutines.*
@@ -19,16 +25,34 @@ class KitchenActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        
+        // Senior Fix: Kích hoạt Edge-to-Edge và xử lý Insets để không bị đè bởi thanh trạng thái (Pin/Sóng)
+        enableEdgeToEdge()
         setContentView(R.layout.activity_kitchen)
+
+        val rootLayout = findViewById<android.widget.LinearLayout>(R.id.kitchenRoot)
+        ViewCompat.setOnApplyWindowInsetsListener(rootLayout) { v, insets ->
+            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
+            insets
+        }
 
         rvOrders = findViewById(R.id.rvKitchenOrders)
         swipeRefresh = findViewById(R.id.swipeRefreshKitchen)
+        val btnLogout = findViewById<Button>(R.id.btnKitchenLogout)
 
         setupRecyclerView()
         loadActiveOrders()
 
         swipeRefresh.setOnRefreshListener {
             loadActiveOrders()
+        }
+
+        btnLogout.setOnClickListener {
+            val intent = Intent(this, LoginActivity::class.java)
+            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            startActivity(intent)
+            finish()
         }
     }
 
@@ -49,21 +73,17 @@ class KitchenActivity : AppCompatActivity() {
         swipeRefresh.isRefreshing = true
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                val response = RetrofitClient.instance.getOrders()
+                val response = RetrofitClient.instance.getActiveOrders()
                 withContext(Dispatchers.Main) {
                     swipeRefresh.isRefreshing = false
                     if (response.isSuccessful && response.body() != null) {
-                        // Lọc các đơn hàng đang chờ hoặc đang chế biến
-                        val activeOrders = response.body()!!.data.filter { 
-                            it.status == "Pending" || it.status == "Preparing" 
-                        }
-                        adapter.updateData(activeOrders)
+                        adapter.updateData(response.body()!!.data)
                     }
                 }
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {
                     swipeRefresh.isRefreshing = false
-                    Toast.makeText(this@KitchenActivity, "Lỗi: ${e.message}", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@KitchenActivity, "Lỗi kết nối", Toast.LENGTH_SHORT).show()
                 }
             }
         }
@@ -74,15 +94,9 @@ class KitchenActivity : AppCompatActivity() {
             try {
                 val response = RetrofitClient.instance.updateOrderStatus(orderId, UpdateStatusRequest(status))
                 withContext(Dispatchers.Main) {
-                    if (response.isSuccessful) {
-                        loadActiveOrders()
-                    }
+                    if (response.isSuccessful) loadActiveOrders()
                 }
-            } catch (e: Exception) {
-                withContext(Dispatchers.Main) {
-                    Toast.makeText(this@KitchenActivity, "Lỗi: ${e.message}", Toast.LENGTH_SHORT).show()
-                }
-            }
+            } catch (e: Exception) { /* Log error */ }
         }
     }
 
@@ -91,15 +105,9 @@ class KitchenActivity : AppCompatActivity() {
             try {
                 val response = RetrofitClient.instance.updateOrderDetailStatus(detailId, UpdateStatusRequest(status))
                 withContext(Dispatchers.Main) {
-                    if (response.isSuccessful) {
-                        loadActiveOrders()
-                    }
+                    if (response.isSuccessful) loadActiveOrders()
                 }
-            } catch (e: Exception) {
-                withContext(Dispatchers.Main) {
-                    Toast.makeText(this@KitchenActivity, "Lỗi: ${e.message}", Toast.LENGTH_SHORT).show()
-                }
-            }
+            } catch (e: Exception) { /* Log error */ }
         }
     }
 }
