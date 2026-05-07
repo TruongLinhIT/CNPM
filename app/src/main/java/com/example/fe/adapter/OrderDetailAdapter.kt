@@ -46,8 +46,13 @@ class OrderDetailAdapter(
             else -> 0xFF000000.toInt()
         })
 
-        // Nút Phục vụ chỉ hiện khi món đã READY
-        holder.btnServe.visibility = if (item.status == OrderStatus.READY) View.VISIBLE else View.GONE
+        // Nút Phục vụ hiện khi:
+        // 1. Món ăn đã READY (Bếp đã xong)
+        // 2. Hoặc là Đồ uống (category_id = 1) nhân viên có thể phục vụ bất cứ lúc nào (trừ khi đã Served)
+        val isDrink = item.menuItem?.category_id == 1
+        val canServe = item.status == OrderStatus.READY || (isDrink && item.status != OrderStatus.SERVED)
+        
+        holder.btnServe.visibility = if (canServe) View.VISIBLE else View.GONE
         holder.btnServe.setOnClickListener { onServeClick(item) }
     }
 

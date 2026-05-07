@@ -54,12 +54,18 @@ async function createOrder(payload, userId) {
       const price = toNumber(menuItem.price);
       subtotal += price * qty;
 
+      // Chia luồng: Đồ uống (category_id = 1) tự động chuyển sang 'Ready' (Sẵn sàng)
+      // Món ăn (category_id = 2) để trạng thái 'Pending' cho bếp
+      const isDrink = Number(menuItem.category_id) === 1 ||
+                     (menuItem.Category && menuItem.Category.name === 'Đồ uống');
+      const initialStatus = isDrink ? 'Ready' : 'Pending';
+
       detailPayload.push({
         order_id: order.order_id,
         item_id: item.item_id,
         quantity: qty,
         price_at_time: price,
-        status: 'Pending'
+        status: initialStatus
       });
     }
 
@@ -94,12 +100,18 @@ async function addItemsToOrder(orderId, itemsPayload) {
       const qty = toNumber(item.quantity);
       extraSubtotal += price * qty;
 
+      // Chia luồng: Đồ uống (category_id = 1) tự động chuyển sang 'Ready' (Sẵn sàng)
+      // Món ăn (category_id = 2) để trạng thái 'Pending' cho bếp
+      const isDrink = Number(menuItem.category_id) === 1 ||
+                     (menuItem.Category && menuItem.Category.name === 'Đồ uống');
+      const initialStatus = isDrink ? 'Ready' : 'Pending';
+
       await OrderDetail.create({
         order_id: orderId,
         item_id: item.item_id,
         quantity: qty,
         price_at_time: price,
-        status: 'Pending'
+        status: initialStatus
       }, { transaction: tx });
     }
 

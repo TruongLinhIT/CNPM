@@ -141,20 +141,51 @@ class TableDetailActivity : AppCompatActivity() {
     }
 
     private fun showPaymentDialog() {
-        // Senior Fix: Kiểm tra xem bếp đã nấu xong tất cả các món chưa
-        val hasIncompleteItems = currentOrder?.orderDetails?.any { 
-            it.status == "Pending" || it.status == "Preparing" 
+        // Cập nhật lại dữ liệu mới nhất từ server trước khi hiện dialog thanh toán để có số tiền chính xác nhất
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val response = RetrofitClient.instance.getActiveOrders()
+                withContext(Dispatchers.Main) {
+                    if (response.isSuccessful && response.body() != null) {
+                        val activeOrder = response.body()!!.data.find { it.table_id == tableId }
+                        if (activeOrder != null) {
+                            currentOrder = activeOrder
+                            updateUI(activeOrder)
+                            
+                            // Tiến hành hiển thị Dialog sau khi đã cập nhật số tiền
+                            showActualPaymentDialog()
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(this@TableDetailActivity, "Lỗi cập nhật số tiền", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
+    }
+
+    private fun showActualPaymentDialog() {
+        val order = currentOrder ?: return
+        
+        // Kiểm tra xem tất cả các món (bao gồm cả nước uống) đã được phục vụ chưa
+        val hasUnservedItems = order.orderDetails?.any { 
+            it.status != OrderStatus.SERVED && it.status != OrderStatus.CANCELLED
         } ?: false
 
-        if (hasIncompleteItems) {
-            Toast.makeText(this, "Không thể thanh toán! Vui lòng đợi bếp nấu xong tất cả các món.", Toast.LENGTH_LONG).show()
+        if (hasUnservedItems) {
+            Toast.makeText(this, "Vui lòng xác nhận 'PHỤC VỤ' cho tất cả các món trước khi thanh toán.", Toast.LENGTH_LONG).show()
             return
         }
 
-        // Senior Fix: Chỉ giữ lại thanh toán Tiền mặt và ẩn các phương thức khác
+        // Định dạng tiền tệ VNĐ
+        val formatter = NumberFormat.getCurrencyInstance(Locale("vi", "VN"))
+        val totalAmount = order.total_amount
+        val totalStr = formatter.format(totalAmount)
+
         AlertDialog.Builder(this)
             .setTitle("Thanh toán hóa đơn")
-            .setMessage("Xác nhận thanh toán TIỀN MẶT cho bàn $tableNumber?")
+            .setMessage("Xác nhận thanh toán TIỀN MẶT cho bàn $tableNumber?\n\nTổng cộng: $totalStr")
             .setPositiveButton("Xác nhận") { _, _ -> performPayment("Cash") }
             .setNegativeButton("Hủy", null)
             .show()

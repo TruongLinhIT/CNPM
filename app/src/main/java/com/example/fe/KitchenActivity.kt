@@ -77,7 +77,17 @@ class KitchenActivity : AppCompatActivity() {
                 withContext(Dispatchers.Main) {
                     swipeRefresh.isRefreshing = false
                     if (response.isSuccessful && response.body() != null) {
-                        adapter.updateData(response.body()!!.data)
+                        // Senior Fix: Bếp chỉ quan tâm các đơn có món ăn chưa hoàn thành (Pending, Preparing)
+                        // Các món 'Ready' (đã nấu xong) và 'Served' (đã bưng đi) sẽ ẩn khỏi danh sách của bếp.
+                        val allOrders = response.body()!!.data
+                        val kitchenOrders = allOrders.filter { order ->
+                            // Bếp chỉ quan tâm các món ăn (category != 1) chưa hoàn thành
+                            order.orderDetails?.any { 
+                                val isFood = it.menuItem?.category_id != 1
+                                isFood && (it.status == "Pending" || it.status == "Preparing")
+                            } == true
+                        }
+                        adapter.updateData(kitchenOrders)
                     }
                 }
             } catch (e: Exception) {

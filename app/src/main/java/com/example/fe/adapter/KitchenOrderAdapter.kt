@@ -36,36 +36,49 @@ class KitchenOrderAdapter(
         holder.tvTime.text = order.created_at
 
         holder.llItems.removeAllViews()
-        order.orderDetails?.forEach { detail ->
-            val itemView = LayoutInflater.from(holder.itemView.context)
-                .inflate(R.layout.item_kitchen_detail, holder.llItems, false)
-            
-            val tvName = itemView.findViewById<TextView>(R.id.tvDetailName)
-            val tvStatus = itemView.findViewById<TextView>(R.id.tvDetailStatus)
-            val btnDone = itemView.findViewById<Button>(R.id.btnDoneItem)
-            
-            tvName.text = "${detail.menuItem?.name} x ${detail.quantity}"
-            tvStatus.text = "Trạng thái: ${detail.status}"
-            
-            // Colors for status
-            when(detail.status) {
-                "Pending" -> tvStatus.setTextColor(0xFFFF0000.toInt())
-                "Preparing" -> tvStatus.setTextColor(0xFF0000FF.toInt())
-                "Ready" -> tvStatus.setTextColor(0xFF008000.toInt())
-            }
-
-            // Hide "XONG" button if already Ready or Served
-            if (detail.status == "Ready" || detail.status == "Served") {
-                btnDone.visibility = View.GONE
-            } else {
-                btnDone.visibility = View.VISIBLE
-                btnDone.setOnClickListener {
-                    // Senior Fix: Transition directly to "Ready" instead of "Preparing"
-                    onItemStatusClick(detail.order_detail_id, "Ready")
+        // Chỉ hiển thị các món ăn (category != 1) đang chờ chế biến (Pending, Preparing)
+        // Đồ uống (category == 1) sẽ bị ẩn khỏi bếp vì nhân viên tự phục vụ.
+        val kitchenItems = order.orderDetails?.filter { 
+            val isFood = it.menuItem?.category_id != 1
+            isFood && (it.status == "Pending" || it.status == "Preparing")
+        } ?: emptyList()
+        
+        if (kitchenItems.isEmpty()) {
+            val tvEmpty = TextView(holder.itemView.context)
+            tvEmpty.text = "Không có món cần chế biến"
+            tvEmpty.setPadding(16, 8, 16, 8)
+            holder.llItems.addView(tvEmpty)
+        } else {
+            kitchenItems.forEach { detail ->
+                val itemView = LayoutInflater.from(holder.itemView.context)
+                    .inflate(R.layout.item_kitchen_detail, holder.llItems, false)
+                
+                val tvName = itemView.findViewById<TextView>(R.id.tvDetailName)
+                val tvStatus = itemView.findViewById<TextView>(R.id.tvDetailStatus)
+                val btnDone = itemView.findViewById<Button>(R.id.btnDoneItem)
+                
+                tvName.text = "${detail.menuItem?.name} x ${detail.quantity}"
+                tvStatus.text = "Trạng thái: ${detail.status}"
+                
+                // Colors for status
+                when(detail.status) {
+                    "Pending" -> tvStatus.setTextColor(0xFFFF0000.toInt())
+                    "Preparing" -> tvStatus.setTextColor(0xFF0000FF.toInt())
+                    "Ready" -> tvStatus.setTextColor(0xFF008000.toInt())
                 }
+
+                // Hide "XONG" button if already Ready
+                if (detail.status == "Ready") {
+                    btnDone.visibility = View.GONE
+                } else {
+                    btnDone.visibility = View.VISIBLE
+                    btnDone.setOnClickListener {
+                        onItemStatusClick(detail.order_detail_id, "Ready")
+                    }
+                }
+                
+                holder.llItems.addView(itemView)
             }
-            
-            holder.llItems.addView(itemView)
         }
         
         // Removed btnReady logic as per user request to hide "Complete All" button

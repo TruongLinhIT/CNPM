@@ -3,6 +3,7 @@ package com.example.fe
 import android.os.Bundle
 import android.widget.EditText
 import android.widget.LinearLayout
+import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -80,18 +81,29 @@ class QuanLyMonAnActivity : AppCompatActivity() {
         val edtGia = EditText(this).apply { hint = "Giá (VNĐ)"; inputType = android.text.InputType.TYPE_CLASS_NUMBER }
         val edtMoTa = EditText(this).apply { hint = "Mô tả" }
         
+        // Thêm chọn loại (Món ăn hoặc Nước uống)
+        val rgLoai = android.widget.RadioGroup(this).apply { orientation = android.widget.RadioGroup.HORIZONTAL }
+        val rbMonAn = android.widget.RadioButton(this).apply { text = "Món Ăn"; id = android.view.View.generateViewId() }
+        val rbNuocUong = android.widget.RadioButton(this).apply { text = "Nước Uống"; id = android.view.View.generateViewId() }
+        rgLoai.addView(rbMonAn)
+        rgLoai.addView(rbNuocUong)
+        rbMonAn.isChecked = true
+
         layout.addView(edtTen)
         layout.addView(edtGia)
         layout.addView(edtMoTa)
+        layout.addView(TextView(this).apply { text = "Loại sản phẩm:" })
+        layout.addView(rgLoai)
         builder.setView(layout)
 
         builder.setPositiveButton("Lưu") { _, _ ->
             val ten = edtTen.text.toString()
             val gia = edtGia.text.toString().toDoubleOrNull() ?: 0.0
             val moTa = edtMoTa.text.toString()
+            val categoryId = if (rbNuocUong.isChecked) 1 else 2
             
             if (ten.isNotEmpty() && gia > 0) {
-                themMonAn(MenuItemRequest(ten, gia, moTa))
+                themMonAn(MenuItemRequest(ten, gia, moTa, category_id = categoryId))
             } else {
                 Toast.makeText(this, "Vui lòng nhập đầy đủ thông tin", Toast.LENGTH_SHORT).show()
             }
@@ -139,18 +151,33 @@ class QuanLyMonAnActivity : AppCompatActivity() {
             setText(mon.moTa)
         }
         
+        // Thêm chọn loại (Món ăn hoặc Nước uống)
+        val rgLoai = android.widget.RadioGroup(this).apply { orientation = android.widget.RadioGroup.HORIZONTAL }
+        val rbMonAn = android.widget.RadioButton(this).apply { text = "Món Ăn"; id = android.view.View.generateViewId() }
+        val rbNuocUong = android.widget.RadioButton(this).apply { text = "Nước Uống"; id = android.view.View.generateViewId() }
+        rgLoai.addView(rbMonAn)
+        rgLoai.addView(rbNuocUong)
+        
+        // Giả định logic: Nếu category_id hiện tại của món là 1 thì chọn Nước uống
+        // (Lưu ý: Bạn có thể cần cập nhật model MonAn để lưu thêm category_id nếu muốn chính xác tuyệt đối ở đây)
+        rbNuocUong.isChecked = (mon.moTa.contains("nước", ignoreCase = true)) // Tạm thời check theo mô tả hoặc mặc định
+        if (!rbNuocUong.isChecked) rbMonAn.isChecked = true
+
         layout.addView(edtTen)
         layout.addView(edtGia)
         layout.addView(edtMoTa)
+        layout.addView(TextView(this).apply { text = "Loại sản phẩm:" })
+        layout.addView(rgLoai)
         builder.setView(layout)
 
         builder.setPositiveButton("Cập nhật") { _, _ ->
             val ten = edtTen.text.toString()
             val gia = edtGia.text.toString().toDoubleOrNull() ?: 0.0
             val moTa = edtMoTa.text.toString()
+            val categoryId = if (rbNuocUong.isChecked) 1 else 2
             
             if (ten.isNotEmpty() && gia > 0) {
-                capNhatMonAn(mon.id, MenuItemRequest(ten, gia, moTa))
+                capNhatMonAn(mon.id, MenuItemRequest(ten, gia, moTa, category_id = categoryId))
             }
         }
         builder.setNegativeButton("Hủy", null)

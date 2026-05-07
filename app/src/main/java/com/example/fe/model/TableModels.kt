@@ -43,7 +43,7 @@ data class MenuItemData(
     val price: Double,
     val image_url: String?,
     val is_available: Boolean,
-    val category_id: Int?
+    @SerializedName("category_id") val category_id: Int?
 )
 
 data class MenuResponse(val success: Boolean, val message: String, val data: List<MenuItemData>)

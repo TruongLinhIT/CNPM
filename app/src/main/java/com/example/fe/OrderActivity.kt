@@ -71,7 +71,8 @@ class OrderActivity : AppCompatActivity() {
                                 tenMon = item.name,
                                 gia = item.price,
                                 hinhAnh = item.image_url ?: "",
-                                moTa = item.description ?: ""
+                                moTa = item.description ?: "",
+                                category_id = item.category_id ?: 0
                             )
                         }
                         adapter.updateData(items)
