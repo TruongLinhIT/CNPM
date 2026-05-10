@@ -22,6 +22,7 @@ class MonAnAdapter(
         val imgMonAn: ImageView = view.findViewById(R.id.imgMonAn)
         val tvTenMon: TextView = view.findViewById(R.id.tvTenMon)
         val tvGiaMon: TextView = view.findViewById(R.id.tvGiaMon)
+        val tvStatusMon: TextView = view.findViewById(R.id.tvStatusMon)
         val btnEdit: ImageButton = view.findViewById(R.id.btnEditMon)
         val btnDelete: ImageButton = view.findViewById(R.id.btnDeleteMon)
     }
@@ -37,6 +38,14 @@ class MonAnAdapter(
         
         val formatter = NumberFormat.getCurrencyInstance(Locale("vi", "VN"))
         holder.tvGiaMon.text = formatter.format(monAn.gia)
+
+        if (!monAn.isAvailable) {
+            holder.tvStatusMon.visibility = View.VISIBLE
+            holder.itemView.alpha = 0.6f
+        } else {
+            holder.tvStatusMon.visibility = View.GONE
+            holder.itemView.alpha = 1.0f
+        }
 
         holder.btnEdit.setOnClickListener { onEditClick(monAn) }
         holder.btnDelete.setOnClickListener { onDeleteClick(monAn) }

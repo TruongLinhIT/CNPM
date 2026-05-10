@@ -6,5 +6,6 @@ data class MonAn(
     val gia: Double,
     val hinhAnh: String = "",
     val moTa: String = "",
-    val category_id: Int = 0
+    val category_id: Int = 0,
+    val isAvailable: Boolean = true
 )

@@ -1,8 +1,11 @@
 package com.example.fe
 
 import android.os.Bundle
+import android.widget.ArrayAdapter
+import android.widget.CheckBox
 import android.widget.EditText
 import android.widget.LinearLayout
+import android.widget.Spinner
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
@@ -22,6 +25,7 @@ class QuanLyMonAnActivity : AppCompatActivity() {
 
     private lateinit var adapter: MonAnAdapter
     private val danhSachMonAn = mutableListOf<MonAn>()
+    private var danhSachCategory = mutableListOf<Category>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -37,11 +41,26 @@ class QuanLyMonAnActivity : AppCompatActivity() {
         rv.adapter = adapter
 
         // Tải dữ liệu từ API
+        loadCategories()
         loadDataFromApi()
 
         // Xử lý nút Thêm món
         findViewById<FloatingActionButton>(R.id.fabAddMonAn).setOnClickListener {
             showDialogThem()
+        }
+    }
+
+    private fun loadCategories() {
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val response = RetrofitClient.instance.getCategories()
+                if (response.isSuccessful && response.body() != null) {
+                    danhSachCategory.clear()
+                    danhSachCategory.addAll(response.body()!!.data)
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
     }
 
@@ -54,7 +73,15 @@ class QuanLyMonAnActivity : AppCompatActivity() {
                         val menuResponse = response.body()!!
                         if (menuResponse.success) {
                             val list = menuResponse.data.map { 
-                                MonAn(it.item_id, it.name, it.price, it.image_url ?: "", it.description ?: "") 
+                                MonAn(
+                                    it.item_id, 
+                                    it.name, 
+                                    it.price, 
+                                    it.image_url ?: "", 
+                                    it.description ?: "", 
+                                    it.category_id ?: 0,
+                                    it.is_available
+                                ) 
                             }
                             adapter.updateData(list)
                         }
@@ -81,29 +108,36 @@ class QuanLyMonAnActivity : AppCompatActivity() {
         val edtGia = EditText(this).apply { hint = "Giá (VNĐ)"; inputType = android.text.InputType.TYPE_CLASS_NUMBER }
         val edtMoTa = EditText(this).apply { hint = "Mô tả" }
         
-        // Thêm chọn loại (Món ăn hoặc Nước uống)
-        val rgLoai = android.widget.RadioGroup(this).apply { orientation = android.widget.RadioGroup.HORIZONTAL }
-        val rbMonAn = android.widget.RadioButton(this).apply { text = "Món Ăn"; id = android.view.View.generateViewId() }
-        val rbNuocUong = android.widget.RadioButton(this).apply { text = "Nước Uống"; id = android.view.View.generateViewId() }
-        rgLoai.addView(rbMonAn)
-        rgLoai.addView(rbNuocUong)
-        rbMonAn.isChecked = true
+        val cbAvailable = CheckBox(this).apply { 
+            text = "Còn hàng"
+            isChecked = true 
+        }
+
+        val spinnerCategory = Spinner(this)
+        val categoryNames = danhSachCategory.map { it.name }
+        val spinnerAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, categoryNames)
+        spinnerAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        spinnerCategory.adapter = spinnerAdapter
 
         layout.addView(edtTen)
         layout.addView(edtGia)
         layout.addView(edtMoTa)
-        layout.addView(TextView(this).apply { text = "Loại sản phẩm:" })
-        layout.addView(rgLoai)
+        layout.addView(TextView(this).apply { text = "Danh mục:" ; setPadding(0, 20, 0, 10)})
+        layout.addView(spinnerCategory)
+        layout.addView(cbAvailable)
         builder.setView(layout)
 
         builder.setPositiveButton("Lưu") { _, _ ->
             val ten = edtTen.text.toString()
             val gia = edtGia.text.toString().toDoubleOrNull() ?: 0.0
             val moTa = edtMoTa.text.toString()
-            val categoryId = if (rbNuocUong.isChecked) 1 else 2
+            val available = cbAvailable.isChecked
+            
+            val selectedCategoryPos = spinnerCategory.selectedItemPosition
+            val categoryId = if (selectedCategoryPos != -1) danhSachCategory[selectedCategoryPos].category_id else 1
             
             if (ten.isNotEmpty() && gia > 0) {
-                themMonAn(MenuItemRequest(ten, gia, moTa, category_id = categoryId))
+                themMonAn(MenuItemRequest(ten, gia, moTa, category_id = categoryId, is_available = available))
             } else {
                 Toast.makeText(this, "Vui lòng nhập đầy đủ thông tin", Toast.LENGTH_SHORT).show()
             }
@@ -150,34 +184,43 @@ class QuanLyMonAnActivity : AppCompatActivity() {
             hint = "Mô tả"
             setText(mon.moTa)
         }
+
+        val cbAvailable = CheckBox(this).apply { 
+            text = "Còn hàng"
+            isChecked = mon.isAvailable 
+        }
         
-        // Thêm chọn loại (Món ăn hoặc Nước uống)
-        val rgLoai = android.widget.RadioGroup(this).apply { orientation = android.widget.RadioGroup.HORIZONTAL }
-        val rbMonAn = android.widget.RadioButton(this).apply { text = "Món Ăn"; id = android.view.View.generateViewId() }
-        val rbNuocUong = android.widget.RadioButton(this).apply { text = "Nước Uống"; id = android.view.View.generateViewId() }
-        rgLoai.addView(rbMonAn)
-        rgLoai.addView(rbNuocUong)
+        val spinnerCategory = Spinner(this)
+        val categoryNames = danhSachCategory.map { it.name }
+        val spinnerAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, categoryNames)
+        spinnerAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        spinnerCategory.adapter = spinnerAdapter
         
-        // Giả định logic: Nếu category_id hiện tại của món là 1 thì chọn Nước uống
-        // (Lưu ý: Bạn có thể cần cập nhật model MonAn để lưu thêm category_id nếu muốn chính xác tuyệt đối ở đây)
-        rbNuocUong.isChecked = (mon.moTa.contains("nước", ignoreCase = true)) // Tạm thời check theo mô tả hoặc mặc định
-        if (!rbNuocUong.isChecked) rbMonAn.isChecked = true
+        // Chọn category hiện tại
+        val currentCategoryIndex = danhSachCategory.indexOfFirst { it.category_id == mon.category_id }
+        if (currentCategoryIndex != -1) {
+            spinnerCategory.setSelection(currentCategoryIndex)
+        }
 
         layout.addView(edtTen)
         layout.addView(edtGia)
         layout.addView(edtMoTa)
-        layout.addView(TextView(this).apply { text = "Loại sản phẩm:" })
-        layout.addView(rgLoai)
+        layout.addView(TextView(this).apply { text = "Danh mục:" ; setPadding(0, 20, 0, 10)})
+        layout.addView(spinnerCategory)
+        layout.addView(cbAvailable)
         builder.setView(layout)
 
         builder.setPositiveButton("Cập nhật") { _, _ ->
             val ten = edtTen.text.toString()
             val gia = edtGia.text.toString().toDoubleOrNull() ?: 0.0
             val moTa = edtMoTa.text.toString()
-            val categoryId = if (rbNuocUong.isChecked) 1 else 2
+            val available = cbAvailable.isChecked
+            
+            val selectedCategoryPos = spinnerCategory.selectedItemPosition
+            val categoryId = if (selectedCategoryPos != -1) danhSachCategory[selectedCategoryPos].category_id else 1
             
             if (ten.isNotEmpty() && gia > 0) {
-                capNhatMonAn(mon.id, MenuItemRequest(ten, gia, moTa, category_id = categoryId))
+                capNhatMonAn(mon.id, MenuItemRequest(ten, gia, moTa, category_id = categoryId, is_available = available))
             }
         }
         builder.setNegativeButton("Hủy", null)
