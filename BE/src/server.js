@@ -13,8 +13,13 @@ initSocket(server);
 async function startServer() {
   try {
     await sequelize.authenticate();
+    console.log('Database connected.');
+
+    // Senior Fix: Sử dụng alter: true để Sequelize tự động cập nhật các cột (như ENUM 'VNPAY')
+    // mà không làm mất dữ liệu cũ.
     if (process.env.DB_SYNC === 'true') {
-      await sequelize.sync();
+      await sequelize.sync({ alter: true });
+      console.log('Database synchronized (altered).');
     }
 
     server.listen(PORT, () => {

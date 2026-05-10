@@ -1,13 +1,20 @@
 const express = require('express');
 const {
   createPaymentController,
-  listPayments
+  listPayments,
+  createVnpayUrl,
+  vnpayReturn,
+  vnpayIpn
 } = require('../controllers/payment.controller');
 
 const router = express.Router();
 
-// Tạm gỡ bỏ authenticate để chạy đơn giản theo yêu cầu
 router.get('/', listPayments);
 router.post('/', createPaymentController);
+
+// VNPAY Routes
+router.post('/create_vnpay_url', createVnpayUrl);
+router.get('/vnpay_return', vnpayReturn);
+router.get('/vnpay_ipn', vnpayIpn);
 
 module.exports = router;

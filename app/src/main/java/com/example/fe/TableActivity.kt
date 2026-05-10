@@ -36,12 +36,21 @@ class TableActivity : AppCompatActivity() {
         }
 
         setupRecyclerView()
+    }
+
+    // Senior Fix: Tự động tải lại danh sách bàn mỗi khi màn hình hiển thị lại
+    override fun onResume() {
+        super.onResume()
         loadTableList()
     }
 
     private fun setupRecyclerView() {
         adapter = TableAdapter(emptyList()) { table ->
-            updateStatus(table)
+            // Khi click vào bàn, mở màn hình chi tiết hoặc xử lý theo luồng của app
+            val intent = android.content.Intent(this, TableDetailActivity::class.java)
+            intent.putExtra("TABLE_ID", table.id)
+            intent.putExtra("TABLE_NUMBER", table.number)
+            startActivity(intent)
         }
         rvTables.layoutManager = GridLayoutManager(this, 2)
         rvTables.adapter = adapter
@@ -99,7 +108,6 @@ class TableActivity : AppCompatActivity() {
         val newStatus = if (table.status == "Available") "Occupied" else "Available"
         CoroutineScope(Dispatchers.Main).launch {
             try {
-                // Senior Fix: Sử dụng UpdateStatusRequest thay vì Map
                 val response = RetrofitClient.instance.updateTableStatus(table.id, UpdateStatusRequest(newStatus))
                 if (response.isSuccessful) loadTableList()
             } catch (e: Exception) {

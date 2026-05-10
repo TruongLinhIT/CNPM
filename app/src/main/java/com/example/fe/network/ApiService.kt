@@ -83,6 +83,9 @@ interface ApiService {
     @POST("api/payments")
     suspend fun createPayment(@Body request: PaymentRequest): Response<PaymentResponse>
 
+    @POST("api/payments/create_vnpay_url")
+    suspend fun createVnpayUrl(@Body request: VnpayRequest): Response<VnpayResponse>
+
     @GET("api/reports/revenue")
     suspend fun getRevenueReport(
         @Query("start_date") startDate: String? = null,

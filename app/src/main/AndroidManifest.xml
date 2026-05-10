@@ -29,6 +29,9 @@
         <activity android:name=".OrderActivity" android:exported="false" />
         <activity android:name=".TableDetailActivity" android:exported="false" />
 
+        <!-- VNPAY Payment Screen -->
+        <activity android:name=".VnpayWebViewActivity" android:exported="false" />
+
         <!-- Other Screens -->
         <activity android:name=".KitchenActivity" android:exported="false" />
         <activity

@@ -1,10 +1,12 @@
 package com.example.fe
 
+import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
 import android.widget.Button
 import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.Toolbar
@@ -29,6 +31,16 @@ class TableDetailActivity : AppCompatActivity() {
     private var tableId: Int = -1
     private var tableNumber: Int = -1
     private var currentOrder: OrderData? = null
+
+    // Launcher để nhận kết quả từ màn hình WebView VNPAY
+    private val vnpayLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            Toast.makeText(this, "Thanh toán VNPAY thành công!", Toast.LENGTH_LONG).show()
+            finish() // Đóng màn hình chi tiết bàn sau khi thanh toán xong
+        } else {
+            Toast.makeText(this, "Thanh toán đã bị hủy hoặc thất bại", Toast.LENGTH_SHORT).show()
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -141,7 +153,6 @@ class TableDetailActivity : AppCompatActivity() {
     }
 
     private fun showPaymentDialog() {
-        // Cập nhật lại dữ liệu mới nhất từ server trước khi hiện dialog thanh toán để có số tiền chính xác nhất
         CoroutineScope(Dispatchers.IO).launch {
             try {
                 val response = RetrofitClient.instance.getActiveOrders()
@@ -151,8 +162,6 @@ class TableDetailActivity : AppCompatActivity() {
                         if (activeOrder != null) {
                             currentOrder = activeOrder
                             updateUI(activeOrder)
-                            
-                            // Tiến hành hiển thị Dialog sau khi đã cập nhật số tiền
                             showActualPaymentDialog()
                         }
                     }
@@ -168,7 +177,6 @@ class TableDetailActivity : AppCompatActivity() {
     private fun showActualPaymentDialog() {
         val order = currentOrder ?: return
         
-        // Kiểm tra xem tất cả các món (bao gồm cả nước uống) đã được phục vụ chưa
         val hasUnservedItems = order.orderDetails?.any { 
             it.status != OrderStatus.SERVED && it.status != OrderStatus.CANCELLED
         } ?: false
@@ -178,17 +186,42 @@ class TableDetailActivity : AppCompatActivity() {
             return
         }
 
-        // Định dạng tiền tệ VNĐ
-        val formatter = NumberFormat.getCurrencyInstance(Locale("vi", "VN"))
-        val totalAmount = order.total_amount
-        val totalStr = formatter.format(totalAmount)
-
+        val options = arrayOf("Tiền mặt", "Thanh toán điện tử (VNPAY)")
         AlertDialog.Builder(this)
-            .setTitle("Thanh toán hóa đơn")
-            .setMessage("Xác nhận thanh toán TIỀN MẶT cho bàn $tableNumber?\n\nTổng cộng: $totalStr")
-            .setPositiveButton("Xác nhận") { _, _ -> performPayment("Cash") }
+            .setTitle("Chọn phương thức thanh toán")
+            .setItems(options) { _, which ->
+                when (which) {
+                    0 -> performPayment("Cash")
+                    1 -> startVnpayFlow()
+                }
+            }
             .setNegativeButton("Hủy", null)
             .show()
+    }
+
+    private fun startVnpayFlow() {
+        val order = currentOrder ?: return
+        val amount = order.total_amount
+        val orderId = order.order_id
+
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val response = RetrofitClient.instance.createVnpayUrl(VnpayRequest(orderId, amount))
+                withContext(Dispatchers.Main) {
+                    if (response.isSuccessful && response.body()?.data != null) {
+                        val intent = Intent(this@TableDetailActivity, VnpayWebViewActivity::class.java)
+                        intent.putExtra("VNPAY_URL", response.body()!!.data!!.url)
+                        vnpayLauncher.launch(intent)
+                    } else {
+                        Toast.makeText(this@TableDetailActivity, "Không thể tạo liên kết VNPAY", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            } catch (e: Exception) {
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(this@TableDetailActivity, "Lỗi kết nối server", Toast.LENGTH_SHORT).show()
+                }
+            }
+        }
     }
 
     private fun performPayment(method: String) {

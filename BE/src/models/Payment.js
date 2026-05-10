@@ -18,7 +18,8 @@ module.exports = (sequelize) => {
         allowNull: false
       },
       payment_method: {
-        type: DataTypes.ENUM('Cash', 'Card', 'E-Wallet'),
+        // Senior Move: Chuyển sang STRING để tránh lỗi ENUM đồng bộ với Database
+        type: DataTypes.STRING,
         allowNull: false
       },
       payment_time: {
